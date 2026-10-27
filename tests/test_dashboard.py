@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 import json
 import os
 from pathlib import Path
@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 import unittest
 from urllib.error import HTTPError
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 from openpyxl import load_workbook
@@ -108,11 +109,17 @@ class ReadmeTests(unittest.TestCase):
                 f"{REPORT_START_MARKER}\nold report\n{REPORT_END_MARKER}\n",
                 encoding="utf-8",
             )
-            with patch("src.main.README_PATH", readme_path):
+            fixed_jst = datetime(2026, 10, 27, 14, 36, tzinfo=ZoneInfo("Asia/Tokyo"))
+            with patch("src.main.README_PATH", readme_path), patch(
+                "src.main.datetime"
+            ) as mocked_datetime:
+                mocked_datetime.now.return_value = fixed_jst
                 update_readme_dashboard(observations, [], "### 今日の市場をひとことで\nテスト")
             content = readme_path.read_text(encoding="utf-8")
 
         self.assertIn("## 市場ダッシュボード", content)
+        self.assertIn("最終更新: 2026年10月27日 14:36 (JST)", content)
+        self.assertIn("生成日時: 2026年10月27日 14:36 (JST)", content)
         self.assertIn("### 今日の市場をひとことで", content)
         self.assertNotIn("old report", content)
         self.assertIn("README本文を保持", content)

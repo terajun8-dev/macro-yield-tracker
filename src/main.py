@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
@@ -11,6 +12,7 @@ from .config import (
     CHART_DIR,
     INDICATORS,
     JGB_INDICATORS,
+    JAPAN_TIMEZONE,
     README_PATH,
     SYMBOL_PRICE_TYPES,
     WORKBOOK_PATH,
@@ -53,7 +55,7 @@ def _render_readme_section(data: pd.DataFrame, chart_paths) -> str:
     lines = [
         "## 市場ダッシュボード",
         "",
-        f"最終更新: {datetime.now().astimezone().strftime('%Y年%m月%d日 %H:%M (%Z)')}",
+        f"最終更新: {datetime.now(ZoneInfo(JAPAN_TIMEZONE)).strftime('%Y年%m月%d日 %H:%M (%Z)')}",
         "",
         "| 指標 | シンボル | 最新値 | 前回値 | 前日比 | 種別 | 注記 |",
         "|---|---|---:|---:|---:|---|---|",
@@ -113,7 +115,7 @@ def update_readme_dashboard(data: pd.DataFrame, chart_paths, daily_report: str |
     dashboard = f"{START_MARKER}\n{_render_readme_section(data, chart_paths)}{END_MARKER}"
     content = _replace_marked_section(content, START_MARKER, END_MARKER, dashboard)
     if daily_report:
-        generated_at = datetime.now().astimezone().strftime("%Y年%m月%d日 %H:%M (%Z)")
+        generated_at = datetime.now(ZoneInfo(JAPAN_TIMEZONE)).strftime("%Y年%m月%d日 %H:%M (%Z)")
         report_section = (
             f"{REPORT_START_MARKER}\n## AIマーケット日次レポート\n\n"
             f"生成日時: {generated_at}\n\n{daily_report.strip()}\n\n"
