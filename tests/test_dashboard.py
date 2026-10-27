@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from urllib.error import HTTPError
 from unittest.mock import patch
 
 import pandas as pd
@@ -179,6 +180,17 @@ class GeminiReportTests(unittest.TestCase):
             report = generate_daily_report(pd.DataFrame())
         self.assertIsNone(report)
         mocked_urlopen.assert_not_called()
+
+    def test_http_404_skips_report_generation_instead_of_crashing(self):
+        observations = pd.DataFrame(
+            [{"Date": date(2026, 10, 27), "Indicator": "MSCI ACWI", "Symbol": "ACWI", "Value": 158.0, "PriceType": "Price"}]
+        )
+        with patch(
+            "src.report_generator.urlopen",
+            side_effect=HTTPError("https://example.invalid", 404, "Not Found", hdrs=None, fp=None),
+        ):
+            report = generate_daily_report(observations, api_key="invalid-key")
+        self.assertIsNone(report)
 
 
 if __name__ == "__main__":

@@ -16,6 +16,12 @@ from .config import GEMINI_MODEL, INDICATORS, JAPAN_TIMEZONE, JGB_INDICATORS
 
 
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+GEMINI_FALLBACK_MODELS = (
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+)
 
 
 def _build_market_context(data: pd.DataFrame) -> dict:
@@ -78,28 +84,45 @@ def generate_daily_report(
     api_key: str | None = None,
     model: str | None = None,
 ) -> str | None:
-    """Return a Gemini-generated Markdown report, or None when no key is configured."""
+    """Return a Gemini-generated Markdown report, or None when the API is unavailable."""
     api_key = api_key or os.environ.get("GEMINI_API_KEY")
     if not api_key:
         return None
 
-    model_name = model or os.environ.get("GEMINI_MODEL") or GEMINI_MODEL
-    url = GEMINI_API_URL.format(model=quote(model_name, safe=""))
-    payload = {
-        "contents": [{"role": "user", "parts": [{"text": _build_prompt(_build_market_context(data))}]}],
-        "generationConfig": {"temperature": 0.3, "maxOutputTokens": 1600},
-    }
-    request = Request(
-        url,
-        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-        headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
-        method="POST",
-    )
-    try:
-        with urlopen(request, timeout=90) as response:
-            result = json.loads(response.read().decode("utf-8"))
-    except HTTPError as error:
-        raise RuntimeError(f"Gemini API request failed with HTTP {error.code}.") from None
+    preferred_models = []
+    configured_model = model or os.environ.get("GEMINI_MODEL") or GEMINI_MODEL
+    preferred_models.append(configured_model)
+    preferred_models.extend(model for model in GEMINI_FALLBACK_MODELS if model != configured_model)
+
+    last_error: Exception | None = None
+    for model_name in dict.fromkeys(preferred_models):
+        url = GEMINI_API_URL.format(model=quote(model_name, safe=""))
+        payload = {
+            "contents": [{"role": "user", "parts": [{"text": _build_prompt(_build_market_context(data))}]}],
+            "generationConfig": {"temperature": 0.3, "maxOutputTokens": 1600},
+        }
+        request = Request(
+            url,
+            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+            headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
+            method="POST",
+        )
+        try:
+            with urlopen(request, timeout=90) as response:
+                result = json.loads(response.read().decode("utf-8"))
+            break
+        except HTTPError as error:
+            last_error = error
+            if error.code == 404:
+                continue
+            return None
+        except Exception as error:  # pragma: no cover - defensive guard for network errors.
+            last_error = error
+            return None
+    else:
+        if last_error is not None:
+            print(f"Gemini API request failed ({type(last_error).__name__}: {last_error}). AI日次レポートをスキップします.")
+        return None
 
     candidates = result.get("candidates") or []
     if not candidates:
