@@ -2,11 +2,16 @@ name: Update market dashboard
 
 on:
   schedule:
-    - cron: "0 1 * * 1-5"
+    # 09:00 UTC = 18:00 JST, after the Tokyo market close.
+    - cron: "0 9 * * 1-5"
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: market-dashboard-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   refresh:

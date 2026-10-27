@@ -8,7 +8,9 @@ python -m pip install -r requirements.txt
 python -m src.main
 ```
 
-実行すると `output/market_dashboard.xlsx` と `output/charts/` を生成し、このファイル内の市場ダッシュボードを更新します。GitHub Actionsで平日に自動更新され、ワークフローから手動実行することもできます。
+実行すると `output/market_dashboard.xlsx` と `output/charts/` を生成し、このファイル内の市場ダッシュボードを更新します。GitHub Actionsの `Update market dashboard` ワークフローが、平日18:00（日本時間）に自動更新します。手動実行はGitHubリポジトリの「Actions」から同ワークフローを開き、「Run workflow」を選択してください。
+
+初回実行前に、リポジトリの「Settings」→「Actions」→「General」→「Workflow permissions」で、`GITHUB_TOKEN` の書き込みを許可してください。ワークフローはREADMEと `output/` を自動コミットします。
 
 <!-- MARKET-DASHBOARD:START -->
 ## 市場ダッシュボード
