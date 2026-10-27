@@ -114,14 +114,13 @@ class ReadmeTests(unittest.TestCase):
                 "src.main.datetime"
             ) as mocked_datetime:
                 mocked_datetime.now.return_value = fixed_jst
-                update_readme_dashboard(observations, [], "市場概況: テスト")
+                update_readme_dashboard(observations, [], "### 今日の市場をひとことで\nテスト")
             content = readme_path.read_text(encoding="utf-8")
 
         self.assertIn("## 市場ダッシュボード", content)
         self.assertIn("最終更新: 2026年10月27日 14:36 (JST)", content)
         self.assertIn("生成日時: 2026年10月27日 14:36 (JST)", content)
-        self.assertIn("市場概況: テスト", content)
-        self.assertNotIn("### 今日の市場をひとことで", content)
+        self.assertIn("### 今日の市場をひとことで", content)
         self.assertNotIn("old report", content)
         self.assertIn("README本文を保持", content)
 
@@ -136,7 +135,7 @@ class GeminiReportTests(unittest.TestCase):
         )
         complete_report = "\n\n".join(
             [
-                "市場は上昇しました。",
+                "### 今日の市場をひとことで\n市場は上昇しました。",
                 "### 主な指標の動き\n株価は上昇しました。",
                 "### 国内外のニュースと市場の反応\nニュースを確認しました。",
                 "### オルカン・S&P 500を保有する人向けの見方\n長期では分散が重要です。",
@@ -179,7 +178,6 @@ class GeminiReportTests(unittest.TestCase):
         self.assertIn("オルカン", prompt)
         self.assertIn("^TPX", prompt)
         self.assertIn("1306.T", prompt)
-        self.assertNotIn("### 今日の市場をひとことで", prompt)
 
     def test_empty_gemini_response_is_reported_clearly(self):
         class FakeResponse:
@@ -237,7 +235,7 @@ class GeminiReportTests(unittest.TestCase):
                                 {
                                     "text": "\n\n".join(
                                         [
-                                            "市場は上昇しました。",
+                                            "### 今日の市場をひとことで\n市場は上昇しました。",
                                             "### 主な指標の動き\n株価は上昇しました。",
                                             "### 国内外のニュースと市場の反応\nニュースを確認しました。",
                                             "### オルカン・S&P 500を保有する人向けの見方\n長期では分散が重要です。",
@@ -279,7 +277,7 @@ class GeminiReportTests(unittest.TestCase):
             [{"Date": date(2026, 10, 27), "Indicator": "MSCI ACWI", "Symbol": "ACWI", "Value": 158.0, "PriceType": "Price"}]
         )
         response_body = json.dumps(
-            {"candidates": [{"content": {"parts": [{"text": "### 主な指標の動き\n株価は上昇しました。"}]}}]}
+            {"candidates": [{"content": {"parts": [{"text": "### 今日の市場をひとことで\n市場は上昇しました。"}]}}]}
         ).encode("utf-8")
 
         class FakeResponse:
