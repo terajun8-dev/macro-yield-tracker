@@ -126,8 +126,17 @@ class GeminiReportTests(unittest.TestCase):
                 {"Date": date(2026, 10, 27), "Indicator": "MSCI ACWI", "Symbol": "ACWI", "Value": 158.0, "PriceType": "Price"},
             ]
         )
+        complete_report = "\n\n".join(
+            [
+                "### 今日の市場をひとことで\n市場は上昇しました。",
+                "### 主な指標の動き\n株価は上昇しました。",
+                "### 国内外のニュースと市場の反応\nニュースを確認しました。",
+                "### オルカン・S&P 500を保有する人向けの見方\n長期では分散が重要です。",
+                "### チャートで見る直近の流れ\n直近は上向きです。",
+            ]
+        )
         response_body = json.dumps(
-            {"candidates": [{"content": {"parts": [{"text": "### 今日の市場をひとことで\nテスト"}]}}]}
+            {"candidates": [{"content": {"parts": [{"text": complete_report}]}}]}
         ).encode("utf-8")
 
         class FakeResponse:
@@ -147,10 +156,14 @@ class GeminiReportTests(unittest.TestCase):
         headers = {name.lower(): value for name, value in request.header_items()}
         payload = json.loads(request.data)
         prompt = payload["contents"][0]["parts"][0]["text"]
-        self.assertEqual(report, "### 今日の市場をひとことで\nテスト")
+        self.assertEqual(report, complete_report)
         self.assertEqual(headers["x-goog-api-key"], "test-api-key")
         self.assertNotIn("test-api-key", request.full_url)
         self.assertIn('"value": 158.0', prompt)
+        self.assertIn('"change_since_previous_observation"', prompt)
+        self.assertIn('"difference": 0.5', prompt)
+        self.assertIn('"percent": 0.317', prompt)
+        self.assertEqual(payload["tools"], [{"google_search": {}}])
         self.assertIn("オルカン", prompt)
         self.assertIn("^TPX", prompt)
         self.assertIn("1306.T", prompt)
@@ -185,8 +198,8 @@ class GeminiReportTests(unittest.TestCase):
         prompt = _build_prompt({"markets": [{"indicator": "日経平均株価", "symbol": "^N225", "recent_observations": [{"date": "2026-10-27", "value": 63000.0}]}]})
         self.assertIn("各見出しの後に", prompt)
         self.assertIn("3〜5文", prompt)
-        self.assertIn("700〜1200文字", prompt)
-        self.assertIn("国内外の材料", prompt)
+        self.assertIn("1000〜1600文字", prompt)
+        self.assertIn("国内と海外の材料", prompt)
         self.assertIn("為替", prompt)
 
     def test_prompt_mentions_optional_related_news(self):
@@ -197,6 +210,78 @@ class GeminiReportTests(unittest.TestCase):
         self.assertIn("関連ニュース", prompt)
         self.assertIn("海外", prompt)
         self.assertIn("国内", prompt)
+
+    def test_grounding_sources_are_included_in_report(self):
+        observations = pd.DataFrame(
+            [{"Date": date(2026, 10, 27), "Indicator": "MSCI ACWI", "Symbol": "ACWI", "Value": 158.0, "PriceType": "Price"}]
+        )
+        response_body = json.dumps(
+            {
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [
+                                {
+                                    "text": "\n\n".join(
+                                        [
+                                            "### 今日の市場をひとことで\n市場は上昇しました。",
+                                            "### 主な指標の動き\n株価は上昇しました。",
+                                            "### 国内外のニュースと市場の反応\nニュースを確認しました。",
+                                            "### オルカン・S&P 500を保有する人向けの見方\n長期では分散が重要です。",
+                                            "### チャートで見る直近の流れ\n直近は上向きです。",
+                                        ]
+                                    )
+                                }
+                            ]
+                        },
+                        "groundingMetadata": {
+                            "groundingChunks": [
+                                {"web": {"title": "市場ニュース", "uri": "https://example.com/news"}},
+                                {"web": {"title": "市場ニュース", "uri": "https://example.com/news"}},
+                            ]
+                        },
+                    }
+                ]
+            }
+        ).encode("utf-8")
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return None
+
+            def read(self):
+                return response_body
+
+        with patch("src.report_generator.urlopen", return_value=FakeResponse()):
+            report = generate_daily_report(observations, api_key="test-api-key")
+
+        self.assertIn("### 参照したニュース・資料", report)
+        self.assertEqual(report.count("https://example.com/news"), 1)
+
+    def test_incomplete_report_is_rejected(self):
+        observations = pd.DataFrame(
+            [{"Date": date(2026, 10, 27), "Indicator": "MSCI ACWI", "Symbol": "ACWI", "Value": 158.0, "PriceType": "Price"}]
+        )
+        response_body = json.dumps(
+            {"candidates": [{"content": {"parts": [{"text": "### 今日の市場をひとことで\n市場は上昇しました。"}]}}]}
+        ).encode("utf-8")
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return None
+
+            def read(self):
+                return response_body
+
+        with patch("src.report_generator.urlopen", return_value=FakeResponse()):
+            with self.assertRaisesRegex(RuntimeError, "incomplete report"):
+                generate_daily_report(observations, api_key="test-api-key")
 
     def test_http_404_skips_report_generation_instead_of_crashing(self):
         observations = pd.DataFrame(

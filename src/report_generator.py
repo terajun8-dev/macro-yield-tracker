@@ -21,7 +21,13 @@ GEMINI_FALLBACK_MODELS = (
     "gemini-2.5-flash",
     "gemini-2.5-flash-lite",
     "gemini-2.0-flash",
-    "gemini-1.5-flash",
+)
+REQUIRED_REPORT_HEADINGS = (
+    "### 今日の市場をひとことで",
+    "### 主な指標の動き",
+    "### 国内外のニュースと市場の反応",
+    "### オルカン・S&P 500を保有する人向けの見方",
+    "### チャートで見る直近の流れ",
 )
 
 
@@ -30,19 +36,62 @@ def _build_market_context(data: pd.DataFrame) -> dict:
     expected_symbols.update(JGB_INDICATORS)
     series = []
     for symbol, observations in data.sort_values("Date").groupby("Symbol"):
-        observations = observations.tail(5)
+        observations = observations.sort_values("Date")
+        recent = observations.tail(5)
+        first = observations.iloc[0]
         latest = observations.iloc[-1]
+        previous = observations.iloc[-2] if len(observations) > 1 else None
+        is_yield = str(latest["PriceType"]) == "Yield"
+
+        def summarize_change(start_value: float, end_value: float) -> dict:
+            difference = float(end_value) - float(start_value)
+            summary = {"difference": round(difference, 6)}
+            if is_yield:
+                summary["basis_points"] = round(difference * 100, 2)
+            elif start_value:
+                summary["percent"] = round(difference / abs(float(start_value)) * 100, 3)
+            return summary
+
+        low = observations.loc[observations["Value"].idxmin()]
+        high = observations.loc[observations["Value"].idxmax()]
         series.append(
             {
                 "indicator": str(latest["Indicator"]),
                 "symbol": str(symbol),
                 "type": str(latest["PriceType"]),
+                "latest": {
+                    "date": pd.to_datetime(latest["Date"]).date().isoformat(),
+                    "value": round(float(latest["Value"]), 6),
+                },
+                "change_since_previous_observation": (
+                    {
+                        "previous_date": pd.to_datetime(previous["Date"]).date().isoformat(),
+                        **summarize_change(previous["Value"], latest["Value"]),
+                    }
+                    if previous is not None
+                    else None
+                ),
+                "chart_period_summary": {
+                    "from": pd.to_datetime(first["Date"]).date().isoformat(),
+                    "to": pd.to_datetime(latest["Date"]).date().isoformat(),
+                    "observation_count": int(len(observations)),
+                    "first_value": round(float(first["Value"]), 6),
+                    "change_from_first": summarize_change(first["Value"], latest["Value"]),
+                    "low": {
+                        "date": pd.to_datetime(low["Date"]).date().isoformat(),
+                        "value": round(float(low["Value"]), 6),
+                    },
+                    "high": {
+                        "date": pd.to_datetime(high["Date"]).date().isoformat(),
+                        "value": round(float(high["Value"]), 6),
+                    },
+                },
                 "recent_observations": [
                     {
                         "date": pd.to_datetime(row.Date).date().isoformat(),
                         "value": round(float(row.Value), 6),
                     }
-                    for row in observations.itertuples()
+                    for row in recent.itertuples()
                 ],
             }
         )
@@ -63,41 +112,40 @@ def _build_market_context(data: pd.DataFrame) -> dict:
 
 def _build_prompt(context: dict) -> str:
     serialized_context = json.dumps(context, ensure_ascii=False, indent=2)
-    return f"""あなたは金融リテラシーを支援するマーケット解説者です。次のJSONに含まれる最新市場データだけを根拠に、初心者向けの日本語Markdown日次レポートを書いてください。
+    return f"""あなたは金融リテラシーを支援するマーケット解説者です。JSONの市場データとGoogle Search groundingで確認できたニュースを使い、初心者にも知識のある読者にも読み応えのある日本語Markdown日次レポートを書いてください。
 
 必ず守ること:
-- 日付、数値、値動きはJSONの値を正確に使い、未提供の市場ニュースや値動きの原因を作らない。
-- 観測事実と一般的な解釈を区別し、データがない指標や市場ごとの更新日の違いも必要に応じて説明する。
-- 国内外の材料は、JSONに含まれる米国株・日本株・為替・債券・ETFの動きから読み取れる一般的な背景として説明する。実在のニュース記事本文を作らない。
-- `related_news` がある場合は、それを「国内・海外の材料として要点を反映」する。ニュースが空の場合は、空であることを明言し、データベースの動きだけで解説する。
+- 日付、数値、値動きはJSONの値を正確に使い、直前観測日と最新日の違いを「前営業日」と決めつけない。
+- 観測事実、ニュースで確認できる事実、一般的な市場解釈を明確に区別する。ニュースと値動きの因果関係は裏付けがある場合だけ述べる。
+- `chart_period_summary` は生成済みチャートの全期間を表す。短期の値動きだけでなく、期間の始点からの変化やレンジ内の位置も使い、チャートの傾向を文章で説明する。
+- Google Search groundingで国内・海外の市場関連ニュースを調べる。JSONの`related_news`は検索の手掛かりとして扱い、記事内容を確認できない場合は断定しない。検索結果が得られない場合はその旨を明示する。
+- JSONにない市場価格やニュース内容を作らず、最新データの対象日が異なる場合はその違いを説明する。
 - オルカン（全世界株式）とS&P 500の長期保有者向けの一般的な見方を含める。個人別の売買・配分指示、短期予測、利益保証はしない。
 - TOPIX連動ETFの価格をTOPIX指数そのものとして扱わない。
-- 専門用語は短く説明し、煽らず、誤解のない表現にする。
-- 各見出しの後に、3〜5文の本文を必ず書く。見出しだけで終わらせず、短い一言で切らない。
-- 各見出しには、少なくとも1つの具体的な数値または変化率を含める。例: 「日経平均は○○円で、前日比△○○円」など。
-- 全体で700〜1200文字程度の分量を目安にし、初心者にも理解しやすい文章にする。
-- 次の4つの見出しをこの順で使い、前後にコードフェンスや余分な挨拶を付けない。
-  1. `### 今日の市場をひとことで`
-  2. `### 主な指標の動き`
-  3. `### オルカン・S&P 500を保有する人向けの見方`
-  4. `### 直近数営業日の動向`
-- 見出しのあとに本文がない、または途中で見出しが切れる出力は絶対にしない。
-- 各節で「国内の動き」「海外の動き」「為替と金利」「ETFの動き」のような材料を自然に含めて、広い視点でまとめる。
-- もし `related_news` があるなら、国内の見出しと海外の見出しの両方を1つずつ取り上げて、相場への影響を簡潔に示す。
-- 文章は「関連ニュース」を必ず何かしら含めるか、または「関連ニュースが十分にないため市場データに基づいて整理する」と明示する。
+- 専門用語（bp、利回り、ボラティリティ等）は初出時に短く説明し、煽らず、観測値と解釈を丁寧に結びつける。
+- 各見出しの後に、数値に基づく具体的な本文を3〜5文書く。データがない場合は無理に数字を作らず、その制約を伝える。
+- 全体で1000〜1600文字程度を目安にし、主要市場の連動関係と、異なる見方が成り立つ理由も説明する。
+- 見出しは次の順で使い、前後にコードフェンスや余分な挨拶を付けない: `### 今日の市場をひとことで` → `### 主な指標の動き` → `### 国内外のニュースと市場の反応` → `### オルカン・S&P 500を保有する人向けの見方` → `### チャートで見る直近の流れ`
+- 「主な指標」では日本株・米国株・為替・日米金利・VIX・ETFから入手できたものを比較し、株式・為替・金利のつながりを説明する。
+- 「国内外のニュース」では検索で確認できた国内と海外の材料を最低1件ずつ挙げ、ニュースの出典・日付と相場への関連を簡潔に記す。
+- 「チャートで見る直近の流れ」では直近数観測とチャート全期間の方向、期間高安を区別し、更新日の異なる指標を同列比較しない。
+- 見出しのあとに本文がない、または途中で見出しが切れる出力はしない。
 
 出力テンプレートの例:
 ### 今日の市場をひとことで
-今日の日本市場では日経平均が... で、前日比で... と上昇しました。米国市場でも... が続き、為替は... に動いたため、日本株の上値を支えたと考えられます。国内外の材料が同時に影響しているため、短期的には... という見方が自然です。
+日本市場では...（対象日、最新値、直前観測比）となり、米国株...やドル円...と対照的な動きでした。チャート全期間では...から...へ推移しており、当日の変化が長期傾向と同じ方向かも確認できます。ニュースでは...が報じられていますが、値動きとの因果は...の範囲で捉える必要があります。総じて...という局面ですが、...には注意が必要です。
 
 ### 主な指標の動き
-日経平均は...、TOPIX連動ETFは...、ドル円は... でした。米10年債利回りが... であった一方で、VIX指数は... となり、リスク志向の強さと警戒感が同時に見られました。これらの動きから、国内外の市場参加者は... と受け止めていると考えられます。
+日経平均...、TOPIX...、TOPIX連動ETF...、S&P 500...でした。ドル円...に対し、米国債・日本国債利回りは...、VIXは...です。価格変化と利回り変化（bp）の単位の違いを説明し、確認できる連動と解釈の限界を示します。取得できなかった系列は欠測として扱います。
+
+### 国内外のニュースと市場の反応
+国内では...（出典、日付）、海外では...が確認できます。...という市場データとの関係は考えられますが、直接の因果が確認できない場合は可能性として表現します。検索で確認できた記事が不足する場合は、その制約を明記します。
 
 ### オルカン・S&P 500を保有する人向けの見方
-オルカンとS&P 500の両方で... が続いており、長期保有者にとっては... と見るのが自然です。一方で、短期の値動きは... に左右されやすいため、相場の急変に備えて... を意識するのが大切です。
+MSCI ACWI...とS&P 500...の観測値・期間推移から、世界株と米国株の重なりや違いを説明します。為替...と金利...は円ベースの評価や株式の割引率に影響し得ます。短期変動と長期分散投資の考え方を分け、個別の売買判断には踏み込みません。
 
-### 直近数営業日の動向
-直近の数営業日では、日経平均は...、米国株は...、ドル円は... といった流れが続いています。特に... は今後の資金の流れを左右しやすく、国内外の投資家がどこに注目しているかを確認するうえで重要です。
+### チャートで見る直近の流れ
+直近の数観測では...、チャート期間（...から...）では...でした。期間高値...・安値...のどこに現在値があるかを示し、短期の反発・下落と全期間の方向が異なる場合は両方を説明します。市場ごとの休場日やデータ更新差にも触れます。
 
 市場データ（JST基準、各銘柄は直近最大5観測）:
 {serialized_context}
@@ -124,7 +172,8 @@ def generate_daily_report(
         url = GEMINI_API_URL.format(model=quote(model_name, safe=""))
         payload = {
             "contents": [{"role": "user", "parts": [{"text": _build_prompt(_build_market_context(data))}]}],
-            "generationConfig": {"temperature": 0.3, "maxOutputTokens": 1600},
+            "tools": [{"google_search": {}}],
+            "generationConfig": {"temperature": 0.3, "maxOutputTokens": 2400},
         }
         request = Request(
             url,
@@ -154,8 +203,28 @@ def generate_daily_report(
     candidates = result.get("candidates") or []
     if not candidates:
         raise RuntimeError("Gemini API returned no report candidates.")
-    parts = candidates[0].get("content", {}).get("parts", [])
+    candidate = candidates[0]
+    parts = candidate.get("content", {}).get("parts", [])
     report = "\n".join(part.get("text", "") for part in parts).strip()
     if not report:
         raise RuntimeError("Gemini API returned an empty report.")
+    missing_headings = [heading for heading in REQUIRED_REPORT_HEADINGS if heading not in report]
+    if missing_headings or candidate.get("finishReason") == "MAX_TOKENS":
+        missing = ", ".join(missing_headings) or "none"
+        raise RuntimeError(
+            f"Gemini returned an incomplete report (missing sections: {missing}; "
+            f"finishReason: {candidate.get('finishReason', 'unknown')})."
+        )
+    source_links = []
+    seen_urls = set()
+    metadata = candidate.get("groundingMetadata", {})
+    for chunk in metadata.get("groundingChunks", []):
+        web_source = chunk.get("web", {})
+        title = str(web_source.get("title") or "参照記事").strip()
+        uri = str(web_source.get("uri") or "").strip()
+        if uri.startswith(("https://", "http://")) and uri not in seen_urls:
+            source_links.append(f"- [{title}]({uri})")
+            seen_urls.add(uri)
+    if source_links:
+        report += "\n\n### 参照したニュース・資料\n" + "\n".join(source_links)
     return report
