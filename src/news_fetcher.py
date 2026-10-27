@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import datetime
+from email.utils import parsedate_to_datetime
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
@@ -12,6 +14,7 @@ import xml.etree.ElementTree as ET
 
 
 NEWSAPI_URL = "https://newsapi.org/v2/top-headlines"
+PUBLICATION_DATE_FORMAT = "%Y-%m-%d"
 RSS_FEEDS = (
     "https://news.google.com/rss?hl=ja&gl=JP&ceid=JP:ja",
     "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en",
@@ -26,11 +29,27 @@ def _normalize_news_item(item: dict[str, Any]) -> dict[str, str]:
         return {}
     source = str(item.get("source") or "").strip() or "News"
     url = str(item.get("url") or "").strip()
+    publication_date = _parse_publication_date(item.get("publication_date"))
     return {
         "title": title,
         "source": source,
         "url": url,
+        "publication_date": publication_date,
     }
+
+
+def _parse_publication_date(value: object) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    try:
+        published = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        try:
+            published = parsedate_to_datetime(text)
+        except (TypeError, ValueError, OverflowError):
+            return ""
+    return published.strftime(PUBLICATION_DATE_FORMAT)
 
 
 def _read_rss_feed(feed_url: str, limit: int = 3) -> list[dict[str, str]]:
@@ -53,7 +72,16 @@ def _read_rss_feed(feed_url: str, limit: int = 3) -> list[dict[str, str]]:
         if not title:
             continue
         source = (node.findtext("source") or "").strip() or "RSS"
-        items.append({"title": title, "source": source, "url": link})
+        normalized = _normalize_news_item(
+            {
+                "title": title,
+                "source": source,
+                "url": link,
+                "publication_date": node.findtext("pubDate") or node.findtext("date") or "",
+            }
+        )
+        if normalized:
+            items.append(normalized)
 
     if items:
         return items
@@ -64,7 +92,16 @@ def _read_rss_feed(feed_url: str, limit: int = 3) -> list[dict[str, str]]:
         if not title:
             continue
         source = (node.findtext("source") or "").strip() or "RSS"
-        items.append({"title": title, "source": source, "url": link})
+        normalized = _normalize_news_item(
+            {
+                "title": title,
+                "source": source,
+                "url": link,
+                "publication_date": node.findtext("published") or node.findtext("updated") or "",
+            }
+        )
+        if normalized:
+            items.append(normalized)
     return items
 
 
@@ -97,6 +134,7 @@ def _newsapi_headlines(limit: int = 4) -> list[dict[str, str]]:
                 "title": article.get("title"),
                 "source": article.get("source", {}).get("name"),
                 "url": article.get("url"),
+                "publication_date": article.get("publishedAt"),
             }
         )
         if normalized:

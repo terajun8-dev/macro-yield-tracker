@@ -27,9 +27,12 @@ from src.main import (
 from src.report_generator import (
     _build_market_context,
     _build_prompt,
+    _filter_dated_news,
+    _replace_news_section,
     _validate_report_numbers,
     generate_daily_report,
 )
+from src.news_fetcher import _normalize_news_item, _parse_publication_date
 
 
 class FetcherTests(unittest.TestCase):
@@ -69,6 +72,54 @@ class FetcherTests(unittest.TestCase):
         cleaned = _remove_isolated_etf_price_spikes(observations)
         self.assertNotIn(37.14, cleaned["Value"].values)
         self.assertEqual(len(cleaned), 2)
+
+    def test_isolated_etf_spike_over_thirty_percent_is_excluded(self):
+        observations = pd.DataFrame(
+            [
+                {"Date": date(2026, 3, 30), "Symbol": "1306.T", "Value": 278.70, "PriceType": "Price"},
+                {"Date": date(2026, 3, 31), "Symbol": "1306.T", "Value": 37.14, "PriceType": "Price"},
+                {"Date": date(2026, 4, 1), "Symbol": "1306.T", "Value": 280.0, "PriceType": "Price"},
+            ]
+        )
+        cleaned = _remove_isolated_etf_price_spikes(observations)
+        self.assertNotIn(37.14, cleaned["Value"].values)
+        self.assertEqual(cleaned["Value"].min(), 278.70)
+
+    def test_unconfirmed_etf_move_over_thirty_percent_is_warned(self):
+        observations = pd.DataFrame(
+            [
+                {"Date": date(2026, 3, 30), "Symbol": "1306.T", "Value": 100.0, "PriceType": "Price"},
+                {"Date": date(2026, 3, 31), "Symbol": "1306.T", "Value": 140.0, "PriceType": "Price"},
+                {"Date": date(2026, 4, 1), "Symbol": "1306.T", "Value": 145.0, "PriceType": "Price"},
+            ]
+        )
+        with patch("builtins.print") as mocked_print:
+            retained = _remove_isolated_etf_price_spikes(observations)
+
+        self.assertIn(140.0, retained["Value"].values)
+        self.assertTrue(
+            any("30%を超えて変動" in str(call) for call in mocked_print.call_args_list)
+        )
+
+    def test_report_period_low_uses_filtered_etf_observations(self):
+        observations = pd.DataFrame(
+            [
+                {"Date": date(2025, 3, 30), "Indicator": "TOPIX ETF", "Symbol": "1306.T", "Value": 278.70, "PriceType": "Price"},
+                {"Date": date(2026, 3, 27), "Indicator": "TOPIX ETF", "Symbol": "1306.T", "Value": 382.70, "PriceType": "Price"},
+                {"Date": date(2026, 3, 30), "Indicator": "TOPIX ETF", "Symbol": "1306.T", "Value": 37.64, "PriceType": "Price"},
+                {"Date": date(2026, 3, 31), "Indicator": "TOPIX ETF", "Symbol": "1306.T", "Value": 37.14, "PriceType": "Price"},
+                {"Date": date(2026, 4, 1), "Indicator": "TOPIX ETF", "Symbol": "1306.T", "Value": 389.20, "PriceType": "Price"},
+            ]
+        )
+        with patch("src.report_generator.fetch_related_news", return_value=[]):
+            context = _build_market_context(observations)
+
+        etf = next(item for item in context["markets"] if item["symbol"] == "1306.T")
+        self.assertEqual(etf["chart_period_summary"]["low"]["value"], 278.7)
+        self.assertNotIn(
+            37.64, [item["value"] for item in etf["recent_observations"]]
+        )
+        self.assertNotIn(37.14, [item["value"] for item in etf["recent_observations"]])
 
     def test_yahoo_fetch_includes_topix_etf_separately(self):
         from unittest.mock import patch
@@ -192,6 +243,51 @@ class ReadmeTests(unittest.TestCase):
 
 
 class GeminiReportTests(unittest.TestCase):
+    def test_news_publication_dates_are_normalized_and_undated_articles_excluded(self):
+        self.assertEqual(
+            _parse_publication_date("Tue, 27 Oct 2026 10:30:00 +0900"), "2026-10-27"
+        )
+        self.assertEqual(
+            _parse_publication_date("2026-10-27T01:30:00Z"), "2026-10-27"
+        )
+        self.assertEqual(_parse_publication_date("date unknown"), "")
+        news = [
+            {"title": "current", "source": "Reuters", "url": "https://example.com/current", "publication_date": "2026-10-27"},
+            {"title": "undated", "source": "Reuters", "url": "https://example.com/undated", "publication_date": ""},
+            {"title": "old", "source": "Reuters", "url": "https://example.com/old", "publication_date": "2026-10-10"},
+        ]
+        filtered = _filter_dated_news(news, pd.Timestamp("2026-10-27"))
+        self.assertEqual([item["title"] for item in filtered], ["current"])
+        self.assertEqual(
+            _normalize_news_item(
+                {"title": "title", "source": "Reuters", "url": "https://example.com", "publication_date": "2026-10-27T00:00:00Z"}
+            )["publication_date"],
+            "2026-10-27",
+        )
+
+    def test_news_section_uses_only_dated_sources_or_reports_none(self):
+        report = "### 国内外のニュースと市場の反応\nモデル生成のニュース本文\n### 次の節\n本文"
+        without_news = _replace_news_section(report, {"related_news": []})
+        self.assertIn("公開日を確認できるニュースは取得できませんでした", without_news)
+        self.assertNotIn("モデル生成のニュース本文", without_news)
+
+        with_news = _replace_news_section(
+            report,
+            {
+                "related_news": [
+                    {
+                        "publication_date": "2026-10-27",
+                        "source": "Reuters",
+                        "title": "Dated headline",
+                    }
+                ]
+            },
+        )
+        self.assertIn("2026-10-27公開", with_news)
+        self.assertIn("Reuters", with_news)
+        self.assertIn("Dated headline", with_news)
+        self.assertNotIn("モデル生成のニュース本文", with_news)
+
     def test_context_labels_units_stale_yields_and_currency_returns(self):
         observations = pd.DataFrame(
             [
@@ -305,14 +401,17 @@ class GeminiReportTests(unittest.TestCase):
             def read(self):
                 return response_body
 
-        with patch("src.report_generator.urlopen", return_value=FakeResponse()) as mocked_urlopen:
+        with patch("src.report_generator.urlopen", return_value=FakeResponse()) as mocked_urlopen, patch(
+            "src.report_generator.fetch_related_news", return_value=[]
+        ):
             report = generate_daily_report(observations, api_key="test-api-key")
 
         request = mocked_urlopen.call_args.args[0]
         headers = {name.lower(): value for name, value in request.header_items()}
         payload = json.loads(request.data)
         prompt = payload["contents"][0]["parts"][0]["text"]
-        self.assertEqual(report, complete_report)
+        self.assertIn("公開日を確認できるニュースは取得できませんでした", report)
+        self.assertNotIn("ニュースを確認しました", report)
         self.assertEqual(headers["x-goog-api-key"], "test-api-key")
         self.assertNotIn("test-api-key", request.full_url)
         self.assertIn('"value": 158.0', prompt)
@@ -342,7 +441,9 @@ class GeminiReportTests(unittest.TestCase):
         observations = pd.DataFrame(
             [{"Date": date(2026, 10, 27), "Indicator": "MSCI ACWI", "Symbol": "ACWI", "Value": 158.0, "PriceType": "Price"}]
         )
-        with patch("src.report_generator.urlopen", return_value=FakeResponse()):
+        with patch("src.report_generator.urlopen", return_value=FakeResponse()), patch(
+            "src.report_generator.fetch_related_news", return_value=[]
+        ):
             with self.assertRaisesRegex(RuntimeError, "no report candidates"):
                 generate_daily_report(observations, api_key="test-api-key")
 
@@ -359,12 +460,16 @@ class GeminiReportTests(unittest.TestCase):
         self.assertIn("各見出しの後に", prompt)
         self.assertIn("3〜5文", prompt)
         self.assertIn("1000〜1600文字", prompt)
-        self.assertIn("国内と海外の材料", prompt)
+        self.assertIn("日付付き記事がない場合", prompt)
         self.assertIn("為替", prompt)
         self.assertIn("一次データにない市場数値", prompt)
         self.assertIn("因果関係", prompt)
         self.assertIn("TOPIX連動ETF", prompt)
-        self.assertIn("ニュースは検索で記事本文を確認できた事実のみ", prompt)
+        self.assertIn("公開日付き記事だけ", prompt)
+        self.assertIn("国内・海外の区分", prompt)
+        self.assertIn("前営業日（YYYY年M月D日）比", prompt)
+        self.assertIn("レポート全体で一度だけ末尾にまとめ", prompt)
+        self.assertIn("指数の騰落率と一致するとは限らない", prompt)
         self.assertIn("currency_return_comparisons", prompt)
 
     def test_prompt_mentions_optional_related_news(self):
@@ -420,10 +525,22 @@ class GeminiReportTests(unittest.TestCase):
             def read(self):
                 return response_body
 
-        with patch("src.report_generator.urlopen", return_value=FakeResponse()):
+        with patch("src.report_generator.urlopen", return_value=FakeResponse()), patch(
+            "src.report_generator.fetch_related_news",
+            return_value=[
+                {
+                    "title": "Dated market headline",
+                    "source": "Reuters",
+                    "url": "https://example.com/news",
+                    "publication_date": "2026-10-27",
+                }
+            ],
+        ):
             report = generate_daily_report(observations, api_key="test-api-key")
 
         self.assertIn("### 参照したニュース・資料", report)
+        self.assertIn("2026-10-27公開", report)
+        self.assertIn("Reuters", report)
         self.assertEqual(report.count("https://example.com/news"), 1)
 
     def test_incomplete_report_is_rejected(self):
@@ -491,7 +608,7 @@ class GeminiReportTests(unittest.TestCase):
         with patch(
             "src.report_generator.urlopen",
             side_effect=HTTPError("https://example.invalid", 404, "Not Found", hdrs=None, fp=None),
-        ):
+        ), patch("src.report_generator.fetch_related_news", return_value=[]):
             report = generate_daily_report(observations, api_key="invalid-key")
         self.assertIsNone(report)
 

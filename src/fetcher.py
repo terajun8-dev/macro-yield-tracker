@@ -144,7 +144,7 @@ def add_market_notes(data: pd.DataFrame) -> pd.DataFrame:
 
 
 def _remove_isolated_etf_price_spikes(data: pd.DataFrame) -> pd.DataFrame:
-    """Drop single-observation ETF price spikes that immediately reverse."""
+    """Warn about ETF moves above 30% and drop short anomalous price regimes."""
     symbol = next(iter(JP_ETF_SYMBOLS.values()))
     etf = data.loc[
         (data["Symbol"] == symbol) & (data["PriceType"] == "Price")
@@ -152,23 +152,61 @@ def _remove_isolated_etf_price_spikes(data: pd.DataFrame) -> pd.DataFrame:
     if len(etf) < 3:
         return data
 
-    suspicious_indices = []
     values = etf["Value"].to_numpy(dtype=float)
-    for position in range(1, len(etf) - 1):
-        previous, current, following = values[position - 1 : position + 2]
-        if previous <= 0 or current <= 0 or following <= 0:
+    dates = pd.to_datetime(etf["Date"]).tolist()
+    suspicious_indices = set()
+    start = 1
+    while start < len(etf) - 1:
+        baseline = values[start - 1]
+        if baseline <= 0:
+            start += 1
             continue
-        span = pd.to_datetime(etf.iloc[position + 1]["Date"]) - pd.to_datetime(
-            etf.iloc[position - 1]["Date"]
-        )
-        is_large_move = current < previous * 0.5 or current > previous * 1.5
-        immediately_reverses = abs(following / previous - 1) <= 0.1
-        if span <= pd.Timedelta(days=7) and is_large_move and immediately_reverses:
-            row = etf.iloc[position]
-            suspicious_indices.append(row.name)
+        end = start
+        while (
+            end < len(etf) - 1
+            and dates[end + 1] - dates[start - 1] <= pd.Timedelta(days=7)
+        ):
+            cluster = values[start : end + 1]
+            following = values[end + 1]
+            is_separated_level = all(
+                value > 0 and abs(value / baseline - 1) > 0.3 for value in cluster
+            )
+            returns_to_prior_range = (
+                following > 0 and abs(following / baseline - 1) <= 0.15
+            )
+            if is_separated_level and returns_to_prior_range:
+                indices = etf.index[start : end + 1]
+                suspicious_indices.update(indices)
+                dates_text = ", ".join(str(etf.loc[index, "Date"]) for index in indices)
+                values_text = ", ".join(
+                    f"{etf.loc[index, 'Value']:g}" for index in indices
+                )
+                print(
+                    "市場データ品質警告: "
+                    f"{symbol} の {dates_text} の値 ({values_text}) は前後の価格水準から"
+                    "30%超乖離しているため除外します。"
+                )
+                start = end + 1
+                break
+            end += 1
+        else:
+            start += 1
+
+    for position in range(1, len(etf)):
+        previous, current = values[position - 1 : position + 1]
+        current_row = etf.iloc[position]
+        if (
+            previous > 0
+            and current > 0
+            and dates[position] - dates[position - 1] <= pd.Timedelta(days=7)
+            and abs(current / previous - 1) > 0.3
+            and current_row.name not in suspicious_indices
+            and etf.index[position - 1] not in suspicious_indices
+        ):
             print(
                 "市場データ品質警告: "
-                f"{symbol} の {row['Date']} の値 {current:g} は前後の観測と整合しないため除外します。"
+                f"{symbol} の {current_row['Date']} は前回観測から30%を超えて変動しています。"
+                "異常値か実際の価格変動か確認してください。"
             )
 
     return data.drop(index=suspicious_indices) if suspicious_indices else data

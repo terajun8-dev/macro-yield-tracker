@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from urllib.error import HTTPError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
@@ -80,6 +80,12 @@ def _build_market_context(data: pd.DataFrame) -> dict:
                 "change_since_previous_observation": (
                     {
                         "previous_date": pd.to_datetime(previous["Date"]).date().isoformat(),
+                        "observation_gap_calendar_days": int(
+                            (
+                                pd.to_datetime(latest["Date"])
+                                - pd.to_datetime(previous["Date"])
+                            ).days
+                        ),
                         **summarize_change(previous["Value"], latest["Value"]),
                     }
                     if previous is not None
@@ -122,7 +128,7 @@ def _build_market_context(data: pd.DataFrame) -> dict:
             yield_date = pd.to_datetime(item["latest"]["date"])
             item["lag_vs_latest_market_days"] = (latest_market_date - yield_date).days
 
-    related_news = fetch_related_news(limit=4)
+    related_news = _filter_dated_news(fetch_related_news(limit=4), latest_market_date)
     return {
         "as_of_jst": datetime.now(ZoneInfo(JAPAN_TIMEZONE)).strftime("%Y-%m-%d %H:%M %Z"),
         "latest_market_date": (
@@ -137,6 +143,29 @@ def _build_market_context(data: pd.DataFrame) -> dict:
             if symbol not in available_symbols
         ],
     }
+
+
+def _filter_dated_news(news: list[dict], latest_market_date) -> list[dict]:
+    reference_date = (
+        latest_market_date.date()
+        if latest_market_date is not None
+        else datetime.now(ZoneInfo(JAPAN_TIMEZONE)).date()
+    )
+    cutoff_date = reference_date - timedelta(days=7)
+    dated_news = []
+    for item in news:
+        try:
+            publication_date = date.fromisoformat(str(item.get("publication_date", "")))
+        except ValueError:
+            continue
+        if (
+            cutoff_date <= publication_date <= reference_date
+            and str(item.get("title", "")).strip()
+            and str(item.get("source", "")).strip()
+            and str(item.get("url", "")).startswith(("https://", "http://"))
+        ):
+            dated_news.append({**item, "publication_date": publication_date.isoformat()})
+    return dated_news[:3]
 
 
 def _build_currency_return_comparisons(data: pd.DataFrame) -> list[dict]:
@@ -242,46 +271,82 @@ def _validate_report_numbers(report: str, context: dict) -> None:
         raise RuntimeError(f"Gemini report contains unsupported market numbers: {values}.")
 
 
+def _replace_news_section(report: str, context: dict) -> str:
+    """Render the news section only from headlines with a known publication date."""
+    news = context.get("related_news", [])
+    if news:
+        sentences = [
+            f"{item['publication_date']}公開の見出しとして、{item['source']}は"
+            f"「{item['title']}」を掲載しています。"
+            for item in news
+        ]
+        sentences.extend(
+            [
+                "ここでは公開日と見出しを確認できた情報だけを記載しています。",
+                "記事本文に基づく詳細や、市場の値動きとの直接的な因果関係は断定しません。",
+            ]
+        )
+        body = "".join(sentences)
+    else:
+        body = (
+            "公開日を確認できるニュースは取得できませんでした。"
+            "日付不明の記事は、古い情報を当日の材料と誤認しないため掲載対象から除外しています。"
+            "確認できるニュースがないため、市場の値動きとの因果関係も述べません。"
+        )
+
+    sections = re.split(r"(?m)(?=^### )", report)
+    for index, section in enumerate(sections):
+        if section.startswith("### 国内外のニュースと市場の反応"):
+            heading = "### 国内外のニュースと市場の反応"
+            sections[index] = f"{heading}\n{body}\n"
+            break
+    return "\n".join(sections)
+
+
 def _build_prompt(context: dict) -> str:
     serialized_context = json.dumps(context, ensure_ascii=False, indent=2)
     return f"""あなたは金融リテラシーを支援するマーケット解説者です。JSONの市場データとGoogle Search groundingで確認できたニュースを使い、初心者にも知識のある読者にも読み応えのある日本語Markdown日次レポートを書いてください。
 
 必ず守ること:
-- 日付、数値、値動きはJSONの値を正確に使い、直前観測日と最新日の違いを「前営業日」と決めつけない。
-- 観測事実、ニュースで確認できる事実、一般的な市場解釈を明確に区別する。ニュースと値動きの因果関係は裏付けがある場合だけ述べる。
-- 一次データにない市場数値・変化率・因果関係を作らない。ニュースは検索で記事本文を確認できた事実のみを、出典名と記事の日付（確認できる場合）付きで記述する。検索結果の見出しだけから詳細や因果を推測しない。
+- 日付、数値、値動きはJSONの値を正確に使う。株価・ETFなどの価格系列は`previous_date`を示し、「前営業日（YYYY年M月D日）比」と表記する。利回りは「前回観測日（YYYY年M月D日）比」と区別する。
+- 観測事実、ニュース見出し、一般的な市場解釈を明確に区別する。ニュースと値動きの因果関係は裏付けがある場合だけ述べる。
+- 一次データにない市場数値・変化率・因果関係を作らない。ニュースはJSONの`related_news`に含まれる公開日付き記事だけを使い、各見出しの公開日と出典名を記す。日付のないGoogle検索結果や、JSONにない記事は本文に使わない。
+- ニュース節は取得した公開日付きの見出しを列挙する。記事本文で確認できない詳細や、市場との因果は書かない。JSONに対象ニュースがない場合はニュースなしと記し、検索結果から別の記事を補わない。
+- ニュースは「国内外のニュースと市場の反応」節にだけ記載し、日付付き`related_news`以外のニュース情報を他の節に持ち込まない。
+- 記事の出典情報から国内・海外の区分を確認できない場合、地域区分を推測しない。
 - ニュース節以外の市場数値は、JSONの観測値またはそこから計算できる変化だけを使う。検証できない数値は書かず、必要ならデータ不足と説明する。
 - `chart_period_summary` は生成済みチャートの全期間を表す。短期の値動きだけでなく、期間の始点からの変化やレンジ内の位置も使い、チャートの傾向を文章で説明する。
-- Google Search groundingで国内・海外の市場関連ニュースを調べる。JSONの`related_news`は検索の手掛かりとして扱い、記事内容を確認できない場合は断定しない。検索結果が得られない場合はその旨を明示する。
-- JSONにない市場価格やニュース内容を作らず、最新データの対象日が異なる場合はその違いを説明する。
+- Google Search groundingは、日付付き`related_news`の記事の確認だけに使う。別の検索結果をニュース節に追加しない。
+- JSONにない市場価格やニュース内容を作らない。データ対象日の違いは末尾の注意書きに一度だけまとめる。
 - オルカン（全世界株式）とS&P 500の長期保有者向けの一般的な見方を含める。個人別の売買・配分指示、短期予測、利益保証はしない。
-- TOPIX連動ETFの価格をTOPIX指数そのものとして扱わない。
+- TOPIX指数データがない場合は欠測とする。TOPIX連動ETFの騰落率はETF自体の価格変化であり、指数の騰落率と一致するとは限らないことを一文で明記する。
 - 各系列の`unit`を明記し、価格・指数ポイント・利回り・為替レートを混同しない。TOPIXデータがない場合、ETFの値を指数の代用値にせず、別商品の参考価格として区別する。
 - 利回り変化はbpのみで表記し、%での変化幅を重ねて書かない。更新日の遅い利回りは`lag_vs_latest_market_days`を確認し、最新株価との関係や因果を述べない。
 - 専門用語（bp、利回り、ボラティリティ等）は初出時に短く説明し、煽らず、観測値と解釈を丁寧に結びつける。
 - 各見出しの後に、数値に基づく具体的な本文を3〜5文書く。データがない場合は無理に数字を作らず、その制約を伝える。
+- データ更新日の違いに関する注意書きは、レポート全体で一度だけ末尾にまとめ、各節で繰り返さない。株価と利回りの日付差が大きい場合、その注意も末尾に一度だけ記す。
 - 全体で1000〜1600文字程度を目安にし、主要市場の連動関係と、異なる見方が成り立つ理由も説明する。
 - 見出しは次の順で使い、前後にコードフェンスや余分な挨拶を付けない: `### 今日の市場をひとことで` → `### 主な指標の動き` → `### 国内外のニュースと市場の反応` → `### オルカン・S&P 500を保有する人向けの見方` → `### チャートで見る直近の流れ`
 - 「主な指標」では日本株・米国株・為替・日米金利・VIX・ETFから入手できたものを比較し、株式・為替・金利のつながりを説明する。各値はJSONの単位を明記し、ETF価格と指数値を区別する。
-- 「国内外のニュース」では検索で確認できた国内と海外の材料を最低1件ずつ挙げ、ニュースの出典・日付と相場への関連を簡潔に記す。
-- 「チャートで見る直近の流れ」では直近数観測とチャート全期間の方向、期間高安を区別し、更新日の異なる指標を同列比較しない。利回りの`lag_vs_latest_market_days`が5日を超える場合、最新株価との連動・因果を述べない。
+- 「国内外のニュース」では、日付付きの関連ニュース（`related_news`）にある見出し、出典、公開日だけを記す。見出しだけから詳細や相場への影響を創作しない。日付付き記事がない場合は、その旨だけを記す。
+- 「チャートで見る直近の流れ」では直近数観測とチャート全期間の方向、期間高安を区別し、更新日の異なる指標を同列比較しない。利回りの`lag_vs_latest_market_days`が5日を超える場合、最新株価との連動・因果を述べない。対象日の注意は末尾に一度だけ記す。
 - 見出しのあとに本文がない、または途中で見出しが切れる出力はしない。
 
 出力テンプレートの例:
 ### 今日の市場をひとことで
-日本市場では...（対象日、最新値、直前観測比）となり、米国株...やドル円...と対照的な動きでした。チャート全期間では...から...へ推移しており、当日の変化が長期傾向と同じ方向かも確認できます。ニュースでは...が報じられていますが、値動きとの因果は...の範囲で捉える必要があります。総じて...という局面ですが、...には注意が必要です。
+日本市場では...（対象日、最新値、前営業日比）となり、米国株...やドル円...と対照的な動きでした。チャート全期間では...から...へ推移しており、当日の変化が長期傾向と同じ方向かも確認できます。公開日付きのニュース見出しは...ですが、見出しだけでは市場との因果関係を判断できません。総じて...という局面です。
 
 ### 主な指標の動き
-日経平均...、TOPIX...、TOPIX連動ETF...、S&P 500...でした。ドル円...に対し、米国債・日本国債利回りは...、VIXは...です。価格変化と利回り変化（bp）の単位の違いを説明し、確認できる連動と解釈の限界を示します。取得できなかった系列は欠測として扱います。
+日経平均...、TOPIX...、TOPIX連動ETF...、S&P 500...でした。ドル円...に対し、米国債・日本国債利回りは...、VIXは...です。価格変化と利回り変化（bp）の単位の違いを説明し、TOPIX ETFの騰落率はETF自体の値動きで指数の騰落率とは異なり得ると明記します。取得できなかった系列は欠測として扱います。
 
 ### 国内外のニュースと市場の反応
-国内では...（出典、日付）、海外では...が確認できます。...という市場データとの関係は考えられますが、直接の因果が確認できない場合は可能性として表現します。検索で確認できた記事が不足する場合は、その制約を明記します。
+JSONの`related_news`にある公開日付きの見出しを、出典名・公開日とともに紹介します。見出しだけでは記事の詳細や市場への影響を確認できないため、内容や値動きとの因果を推測しません。公開日付きの項目がなければ、ニュースを確認できなかったと記します。
 
 ### オルカン・S&P 500を保有する人向けの見方
-`currency_return_comparisons`がある場合は、同じ期間のUSD建て価格リターンと、為替を反映した円換算リターンを数値で分けて説明します。これは為替込みの参考比較で、投資信託の実績（配当・費用・税金を含むもの）とは異なります。為替データが不足する場合は円換算値を推測しません。金利は更新日の差を踏まえて説明し、短期変動と長期分散投資の考え方を分けます。
+`currency_return_comparisons`がある場合は、同じ期間のUSD建て価格リターンと、為替を反映した円換算リターンを数値で分けて説明します。これは為替込みの参考比較で、投資信託の実績（配当・費用・税金を含むもの）とは異なります。為替データが不足する場合は円換算値を推測しません。短期変動と長期分散投資の考え方を分けます。
 
 ### チャートで見る直近の流れ
-直近の数観測では...、チャート期間（...から...）では...でした。期間高値...・安値...のどこに現在値があるかを示し、短期の反発・下落と全期間の方向が異なる場合は両方を説明します。市場ごとの休場日やデータ更新差にも触れます。
+直近の数観測では...、チャート期間（...から...）では...でした。期間高値...・安値...のどこに現在値があるかを示し、短期の反発・下落と全期間の方向が異なる場合は両方を説明します。
 
 市場データ（JST基準、各銘柄は直近最大5観測）:
 {serialized_context}
@@ -355,15 +420,16 @@ def generate_daily_report(
             f"Gemini returned an incomplete report (missing sections: {missing}; "
             f"finishReason: {candidate.get('finishReason', 'unknown')})."
         )
+    report = _replace_news_section(report, market_context)
     _validate_report_numbers(report, market_context)
 
     source_links = []
     seen_urls = set()
-    metadata = candidate.get("groundingMetadata", {})
-    for chunk in metadata.get("groundingChunks", []):
-        web_source = chunk.get("web", {})
-        title = str(web_source.get("title") or "参照記事").strip()
-        uri = str(web_source.get("uri") or "").strip()
+    for article in market_context["related_news"]:
+        title = (
+            f"{article['source']}（公開日: {article['publication_date']}）"
+        )
+        uri = str(article.get("url") or "").strip()
         if uri.startswith(("https://", "http://")) and uri not in seen_urls:
             source_links.append(f"- [{title}]({uri})")
             seen_urls.add(uri)
