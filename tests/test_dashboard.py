@@ -262,6 +262,19 @@ class GeminiReportTests(unittest.TestCase):
             context,
         )
 
+    def test_numeric_validation_ignores_numeric_tickers(self):
+        context = {
+            "markets": [
+                {"symbol": "1306.T", "latest": {"date": "2026-10-27", "value": 420.0}},
+                {"symbol": "^N225", "latest": {"date": "2026-10-27", "value": 63178.32}},
+            ]
+        }
+        _validate_report_numbers(
+            "### 主な指標の動き\n1306.T（TOPIX連動ETF）は420.0円、"
+            "^N225（日経平均株価）は63,178.32ポイントでした。",
+            context,
+        )
+
     def test_report_uses_api_key_header_and_recent_data(self):
         observations = pd.DataFrame(
             [

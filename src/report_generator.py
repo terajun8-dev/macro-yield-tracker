@@ -207,6 +207,11 @@ def _report_number_facts(context: dict) -> set[float]:
 def _validate_report_numbers(report: str, context: dict) -> None:
     """Reject market-section numbers that cannot be traced to supplied data."""
     facts = _report_number_facts(context)
+    symbols = {
+        str(market["symbol"])
+        for market in context.get("markets", [])
+        if market.get("symbol")
+    }
     sections = re.split(r"(?m)(?=^### )", report)
     market_text = "\n".join(
         section
@@ -218,6 +223,12 @@ def _validate_report_numbers(report: str, context: dict) -> None:
         lambda match: " ".join(match.groups()), market_text
     )
     market_text = market_text.replace("−", "-").replace("＋", "+")
+    for symbol in sorted(symbols, key=len, reverse=True):
+        market_text = re.sub(
+            rf"(?<![A-Za-z0-9]){re.escape(symbol)}(?![A-Za-z0-9])",
+            "",
+            market_text,
+        )
     unsupported = []
     for match in REPORT_NUMBER_PATTERN.finditer(market_text):
         try:
