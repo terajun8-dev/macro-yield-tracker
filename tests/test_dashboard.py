@@ -18,7 +18,7 @@ from src.main import (
     _render_readme_section,
     update_readme_dashboard,
 )
-from src.report_generator import generate_daily_report
+from src.report_generator import _build_prompt, generate_daily_report
 
 
 class FetcherTests(unittest.TestCase):
@@ -180,6 +180,12 @@ class GeminiReportTests(unittest.TestCase):
             report = generate_daily_report(pd.DataFrame())
         self.assertIsNone(report)
         mocked_urlopen.assert_not_called()
+
+    def test_prompt_requires_substantive_sections(self):
+        prompt = _build_prompt({"markets": [{"indicator": "日経平均株価", "symbol": "^N225", "recent_observations": [{"date": "2026-10-27", "value": 63000.0}]}]})
+        self.assertIn("各見出しの後に", prompt)
+        self.assertIn("2〜4文", prompt)
+        self.assertIn("300文字以上", prompt)
 
     def test_http_404_skips_report_generation_instead_of_crashing(self):
         observations = pd.DataFrame(
