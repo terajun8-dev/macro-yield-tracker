@@ -12,6 +12,10 @@ python -m src.main
 
 初回実行前に、リポジトリの「Settings」→「Actions」→「General」→「Workflow permissions」で、`GITHUB_TOKEN` の書き込みを許可してください。ワークフローはREADMEと `output/` を自動コミットします。
 
+### Gemini日次レポートの設定
+
+Google AI Studioで発行したキーを、リポジトリの「Settings」→「Secrets and variables」→「Actions」→「New repository secret」で `GEMINI_API_KEY` として登録してください。キーはソースやREADMEに書かず、GitHub Actionsのシークレットで管理します。キーが未設定の場合も市場データの更新は続行し、AIレポートの生成だけをスキップします。ローカル実行では、環境変数 `GEMINI_API_KEY` を設定してから `python -m src.main` を実行してください。ワークフロー実行1回につきGemini APIを1回呼び出すため、Google AI Studio側の利用枠・料金が適用されます。
+
 <!-- MARKET-DASHBOARD:START -->
 ## 市場ダッシュボード
 
@@ -61,3 +65,9 @@ python -m src.main
 - 日本国債の利回り曲線: 財務省「国債金利情報」CSV（2・5・10・20・30年）
 - 利回りの前日比はbp（1bp = 0.01%）で表示しています。
 <!-- MARKET-DASHBOARD:END -->
+
+<!-- AI-DAILY-REPORT:START -->
+## AIマーケット日次レポート
+
+GitHub Actionsのシークレット `GEMINI_API_KEY` を設定すると、Geminiによる初心者向け解説をここに自動生成します。
+<!-- AI-DAILY-REPORT:END -->

@@ -11,6 +11,7 @@ README_PATH = ROOT_DIR / "README.md"
 HISTORY_PERIOD = "2y"
 JAPAN_TIMEZONE = "Asia/Tokyo"
 US_TIMEZONE = "America/New_York"
+GEMINI_MODEL = "gemini-2.5-flash"
 MOF_JGB_URL = "https://www.mof.go.jp/jgbs/reference/interest_rate/data/jgbcm_all.csv"
 JGB_TENORS = (2, 5, 10, 20, 30)
 

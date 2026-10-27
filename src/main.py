@@ -21,6 +21,8 @@ from .fetcher import fetch_market_data
 
 START_MARKER = "<!-- MARKET-DASHBOARD:START -->"
 END_MARKER = "<!-- MARKET-DASHBOARD:END -->"
+REPORT_START_MARKER = "<!-- AI-DAILY-REPORT:START -->"
+REPORT_END_MARKER = "<!-- AI-DAILY-REPORT:END -->"
 CHART_GROUP_NAMES = {
     "us-global": "米国・グローバル市場",
     "jp-market": "日本市場",
@@ -98,15 +100,29 @@ def _render_readme_section(data: pd.DataFrame, chart_paths) -> str:
     return "\n".join(lines)
 
 
-def update_readme_dashboard(data: pd.DataFrame, chart_paths) -> None:
-    section = f"{START_MARKER}\n{_render_readme_section(data, chart_paths)}{END_MARKER}"
+def _replace_marked_section(content: str, start_marker: str, end_marker: str, section: str) -> str:
+    if start_marker in content and end_marker in content:
+        start = content.index(start_marker)
+        end = content.index(end_marker) + len(end_marker)
+        return content[:start] + section + content[end:]
+    return content.rstrip() + "\n\n" + section + "\n"
+
+
+def update_readme_dashboard(data: pd.DataFrame, chart_paths, daily_report: str | None = None) -> None:
     content = README_PATH.read_text(encoding="utf-8") if README_PATH.exists() else "# macro-yield-tracker\n"
-    if START_MARKER in content and END_MARKER in content:
-        start = content.index(START_MARKER)
-        end = content.index(END_MARKER) + len(END_MARKER)
-        content = content[:start] + section + content[end:]
-    else:
-        content = content.rstrip() + "\n\n" + section + "\n"
+    dashboard = f"{START_MARKER}\n{_render_readme_section(data, chart_paths)}{END_MARKER}"
+    content = _replace_marked_section(content, START_MARKER, END_MARKER, dashboard)
+    if daily_report:
+        generated_at = datetime.now().astimezone().strftime("%Y年%m月%d日 %H:%M (%Z)")
+        report_section = (
+            f"{REPORT_START_MARKER}\n## AIマーケット日次レポート\n\n"
+            f"生成日時: {generated_at}\n\n{daily_report.strip()}\n\n"
+            "※公開情報をもとにした一般的な解説です。特定の個人への投資助言ではありません。\n"
+            f"{REPORT_END_MARKER}"
+        )
+        content = _replace_marked_section(
+            content, REPORT_START_MARKER, REPORT_END_MARKER, report_section
+        )
     README_PATH.write_text(content, encoding="utf-8")
 
 
@@ -114,7 +130,12 @@ def main() -> None:
     data = fetch_market_data()
     chart_paths = render_market_charts(data, CHART_DIR)
     build_workbook(data, chart_paths, WORKBOOK_PATH)
-    update_readme_dashboard(data, chart_paths)
+    from .report_generator import generate_daily_report
+
+    daily_report = generate_daily_report(data)
+    if daily_report is None:
+        print("GEMINI_API_KEYが未設定のため、AI日次レポートはスキップします。")
+    update_readme_dashboard(data, chart_paths, daily_report)
     print(f"README、{WORKBOOK_PATH.relative_to(README_PATH.parent)}、グラフを更新しました。")
 
 

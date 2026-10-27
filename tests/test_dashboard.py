@@ -1,14 +1,23 @@
 from datetime import date
+import json
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 import pandas as pd
 from openpyxl import load_workbook
 
 from src.excel_builder import build_workbook
 from src.fetcher import _parse_mof_date, add_market_notes, fetch_yahoo_market_data
-from src.main import _render_readme_section
+from src.main import (
+    REPORT_END_MARKER,
+    REPORT_START_MARKER,
+    _render_readme_section,
+    update_readme_dashboard,
+)
+from src.report_generator import generate_daily_report
 
 
 class FetcherTests(unittest.TestCase):
@@ -84,6 +93,92 @@ class ReadmeTests(unittest.TestCase):
         etf_row = next(line for line in section.splitlines() if "`1306.T`" in line)
         self.assertIn("TOPIX連動ETF", etf_row)
         self.assertIn("NEXT FUNDS TOPIX連動型上場投信", etf_row)
+
+    def test_daily_report_replaces_its_own_readme_section(self):
+        observations = pd.DataFrame(
+            [
+                {"Date": date(2026, 10, 27), "Indicator": "日経平均株価", "Symbol": "^N225", "Value": 60000.0, "PriceType": "Price", "Note": "初回取得"},
+            ]
+        )
+        with TemporaryDirectory() as directory:
+            readme_path = Path(directory) / "README.md"
+            readme_path.write_text(
+                f"# test\n\nREADME本文を保持\n\n<!-- MARKET-DASHBOARD:START -->old dashboard<!-- MARKET-DASHBOARD:END -->\n\n"
+                f"{REPORT_START_MARKER}\nold report\n{REPORT_END_MARKER}\n",
+                encoding="utf-8",
+            )
+            with patch("src.main.README_PATH", readme_path):
+                update_readme_dashboard(observations, [], "### 今日の市場をひとことで\nテスト")
+            content = readme_path.read_text(encoding="utf-8")
+
+        self.assertIn("## 市場ダッシュボード", content)
+        self.assertIn("### 今日の市場をひとことで", content)
+        self.assertNotIn("old report", content)
+        self.assertIn("README本文を保持", content)
+
+
+class GeminiReportTests(unittest.TestCase):
+    def test_report_uses_api_key_header_and_recent_data(self):
+        observations = pd.DataFrame(
+            [
+                {"Date": date(2026, 10, 26), "Indicator": "MSCI ACWI", "Symbol": "ACWI", "Value": 157.5, "PriceType": "Price"},
+                {"Date": date(2026, 10, 27), "Indicator": "MSCI ACWI", "Symbol": "ACWI", "Value": 158.0, "PriceType": "Price"},
+            ]
+        )
+        response_body = json.dumps(
+            {"candidates": [{"content": {"parts": [{"text": "### 今日の市場をひとことで\nテスト"}]}}]}
+        ).encode("utf-8")
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return None
+
+            def read(self):
+                return response_body
+
+        with patch("src.report_generator.urlopen", return_value=FakeResponse()) as mocked_urlopen:
+            report = generate_daily_report(observations, api_key="test-api-key")
+
+        request = mocked_urlopen.call_args.args[0]
+        headers = {name.lower(): value for name, value in request.header_items()}
+        payload = json.loads(request.data)
+        prompt = payload["contents"][0]["parts"][0]["text"]
+        self.assertEqual(report, "### 今日の市場をひとことで\nテスト")
+        self.assertEqual(headers["x-goog-api-key"], "test-api-key")
+        self.assertNotIn("test-api-key", request.full_url)
+        self.assertIn('"value": 158.0', prompt)
+        self.assertIn("オルカン", prompt)
+        self.assertIn("^TPX", prompt)
+        self.assertIn("1306.T", prompt)
+
+    def test_empty_gemini_response_is_reported_clearly(self):
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return None
+
+            def read(self):
+                return b'{"candidates": []}'
+
+        observations = pd.DataFrame(
+            [{"Date": date(2026, 10, 27), "Indicator": "MSCI ACWI", "Symbol": "ACWI", "Value": 158.0, "PriceType": "Price"}]
+        )
+        with patch("src.report_generator.urlopen", return_value=FakeResponse()):
+            with self.assertRaisesRegex(RuntimeError, "no report candidates"):
+                generate_daily_report(observations, api_key="test-api-key")
+
+    def test_missing_api_key_skips_report_generation(self):
+        with patch.dict(os.environ, {"GEMINI_API_KEY": ""}), patch(
+            "src.report_generator.urlopen"
+        ) as mocked_urlopen:
+            report = generate_daily_report(pd.DataFrame())
+        self.assertIsNone(report)
+        mocked_urlopen.assert_not_called()
 
 
 if __name__ == "__main__":
