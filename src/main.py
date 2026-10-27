@@ -138,7 +138,7 @@ def main() -> None:
         print(f"AI日次レポートの生成に失敗したためスキップします: {exc}")
         daily_report = None
     if daily_report is None:
-        print("GEMINI_API_KEYが未設定またはAPI利用制限により、AI日次レポートはスキップします。")
+        print("GEMINI_API_KEYが未設定、モデル未対応、またはAPI利用制限により、AI日次レポートはスキップします。")
     update_readme_dashboard(data, chart_paths, daily_report)
     print(f"README、{WORKBOOK_PATH.relative_to(README_PATH.parent)}、グラフを更新しました。")
 

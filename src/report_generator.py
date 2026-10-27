@@ -113,15 +113,17 @@ def generate_daily_report(
             break
         except HTTPError as error:
             last_error = error
+            print(f"Gemini HTTP error for model {model_name}: {error.code} {error.reason}")
             if error.code == 404:
                 continue
             return None
         except Exception as error:  # pragma: no cover - defensive guard for network errors.
             last_error = error
+            print(f"Gemini request failed for model {model_name}: {type(error).__name__}: {error}")
             return None
     else:
         if last_error is not None:
-            print(f"Gemini API request failed ({type(last_error).__name__}: {last_error}). AI日次レポートをスキップします.")
+            print(f"Gemini API request failed for all models ({type(last_error).__name__}: {last_error}). AI日次レポートをスキップします.")
         return None
 
     candidates = result.get("candidates") or []
