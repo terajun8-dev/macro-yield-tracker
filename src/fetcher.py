@@ -131,18 +131,52 @@ def add_market_notes(data: pd.DataFrame) -> pd.DataFrame:
             continue
         gap = int(day_gap.loc[index])
         if row["PriceType"] == "Yield":
-            notes.append(f"前回取得日比: {gap}日 / 前日比: {change.loc[index] * 100:+.1f} bp")
+            notes.append(
+                f"前回観測から{gap}日 / 変化: {change.loc[index] * 100:+.1f} bp"
+            )
         else:
             notes.append(
-                f"前回取得日比: {gap}日 / 前日比: {change.loc[index]:+.4g}"
+                f"前回観測から{gap}日 / 変化: {change.loc[index]:+.4g}"
                 f" ({percent_change.loc[index]:+.2f}%)"
             )
     result["Note"] = notes
     return result.sort_values(["Date", "Symbol"]).reset_index(drop=True)
 
 
+def _remove_isolated_etf_price_spikes(data: pd.DataFrame) -> pd.DataFrame:
+    """Drop single-observation ETF price spikes that immediately reverse."""
+    symbol = next(iter(JP_ETF_SYMBOLS.values()))
+    etf = data.loc[
+        (data["Symbol"] == symbol) & (data["PriceType"] == "Price")
+    ].sort_values("Date")
+    if len(etf) < 3:
+        return data
+
+    suspicious_indices = []
+    values = etf["Value"].to_numpy(dtype=float)
+    for position in range(1, len(etf) - 1):
+        previous, current, following = values[position - 1 : position + 2]
+        if previous <= 0 or current <= 0 or following <= 0:
+            continue
+        span = pd.to_datetime(etf.iloc[position + 1]["Date"]) - pd.to_datetime(
+            etf.iloc[position - 1]["Date"]
+        )
+        is_large_move = current < previous * 0.5 or current > previous * 1.5
+        immediately_reverses = abs(following / previous - 1) <= 0.1
+        if span <= pd.Timedelta(days=7) and is_large_move and immediately_reverses:
+            row = etf.iloc[position]
+            suspicious_indices.append(row.name)
+            print(
+                "市場データ品質警告: "
+                f"{symbol} の {row['Date']} の値 {current:g} は前後の観測と整合しないため除外します。"
+            )
+
+    return data.drop(index=suspicious_indices) if suspicious_indices else data
+
+
 def fetch_market_data() -> pd.DataFrame:
     """Fetch and normalize Yahoo and MOF observations into a single long table."""
     yahoo_data = fetch_yahoo_market_data()
     jgb_data = fetch_jgb_from_mof()
-    return add_market_notes(pd.concat([yahoo_data, jgb_data], ignore_index=True))
+    combined = pd.concat([yahoo_data, jgb_data], ignore_index=True)
+    return add_market_notes(_remove_isolated_etf_price_spikes(combined))

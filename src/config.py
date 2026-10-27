@@ -49,6 +49,21 @@ SYMBOL_PRICE_TYPES = {
     for symbol in SYMBOL_TO_INDICATOR
 }
 SYMBOL_PRICE_TYPES.update({symbol: "Yield" for symbol in JGB_SYMBOLS.values()})
+SYMBOL_UNITS = {
+    "^GSPC": "指数ポイント",
+    "^IXIC": "指数ポイント",
+    "^DJI": "指数ポイント",
+    "^VIX": "指数ポイント",
+    "^TNX": "%",
+    "^IRX": "%",
+    "ACWI": "USD/口",
+    "USDJPY=X": "JPY/USD",
+    "DX-Y.NYB": "指数ポイント",
+    "^N225": "指数ポイント",
+    "^TPX": "指数ポイント",
+    "1306.T": "JPY/口",
+    **{symbol: "%" for symbol in JGB_SYMBOLS.values()},
+}
 
 CHART_GROUPS = {
     "us-global": tuple(US_SYMBOLS.values()),

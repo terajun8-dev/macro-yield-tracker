@@ -12,14 +12,24 @@ import pandas as pd
 from openpyxl import load_workbook
 
 from src.excel_builder import build_workbook
-from src.fetcher import _parse_mof_date, add_market_notes, fetch_yahoo_market_data
+from src.fetcher import (
+    _parse_mof_date,
+    _remove_isolated_etf_price_spikes,
+    add_market_notes,
+    fetch_yahoo_market_data,
+)
 from src.main import (
     REPORT_END_MARKER,
     REPORT_START_MARKER,
     _render_readme_section,
     update_readme_dashboard,
 )
-from src.report_generator import _build_prompt, generate_daily_report
+from src.report_generator import (
+    _build_market_context,
+    _build_prompt,
+    _validate_report_numbers,
+    generate_daily_report,
+)
 
 
 class FetcherTests(unittest.TestCase):
@@ -35,7 +45,30 @@ class FetcherTests(unittest.TestCase):
             ]
         )
         noted = add_market_notes(observations)
-        self.assertEqual(noted.iloc[1]["Note"], "前回取得日比: 1日 / 前日比: +5.0 bp")
+        self.assertEqual(noted.iloc[1]["Note"], "前回観測から1日 / 変化: +5.0 bp")
+
+    def test_equity_change_percentage_is_recalculated_from_observations(self):
+        observations = pd.DataFrame(
+            [
+                {"Date": date(2026, 10, 26), "Indicator": "日経平均株価", "Symbol": "^N225", "Value": 62189.65, "PriceType": "Price"},
+                {"Date": date(2026, 10, 27), "Indicator": "日経平均株価", "Symbol": "^N225", "Value": 63178.32, "PriceType": "Price"},
+            ]
+        )
+        noted = add_market_notes(observations)
+        self.assertIn("(+1.59%)", noted.iloc[-1]["Note"])
+        self.assertIn("前回観測から1日 / 変化:", noted.iloc[-1]["Note"])
+
+    def test_isolated_reversing_etf_spike_is_excluded(self):
+        observations = pd.DataFrame(
+            [
+                {"Date": date(2026, 3, 30), "Symbol": "1306.T", "Value": 278.70, "PriceType": "Price"},
+                {"Date": date(2026, 3, 31), "Symbol": "1306.T", "Value": 37.14, "PriceType": "Price"},
+                {"Date": date(2026, 4, 1), "Symbol": "1306.T", "Value": 280.0, "PriceType": "Price"},
+            ]
+        )
+        cleaned = _remove_isolated_etf_price_spikes(observations)
+        self.assertNotIn(37.14, cleaned["Value"].values)
+        self.assertEqual(len(cleaned), 2)
 
     def test_yahoo_fetch_includes_topix_etf_separately(self):
         from unittest.mock import patch
@@ -88,13 +121,24 @@ class ReadmeTests(unittest.TestCase):
         )
         section = _render_readme_section(observations, [])
         topix_row = next(line for line in section.splitlines() if "`^TPX`" in line)
-        self.assertIn("| 種別 | 注記 |", section)
+        self.assertIn("| 種別 | 単位 | 注記 |", section)
         self.assertIn("| 価格 |", next(line for line in section.splitlines() if "`^N225`" in line))
         self.assertIn("データなし", topix_row)
         self.assertIn("価格", topix_row)
         etf_row = next(line for line in section.splitlines() if "`1306.T`" in line)
         self.assertIn("TOPIX連動ETF", etf_row)
         self.assertIn("NEXT FUNDS TOPIX連動型上場投信", etf_row)
+        self.assertIn("| JPY/口 |", etf_row)
+
+    def test_dashboard_marks_topix_etf_unit_and_index_substitution(self):
+        observations = pd.DataFrame(
+            [
+                {"Date": date(2026, 10, 27), "Indicator": "TOPIX連動ETF (NEXT FUNDS TOPIX連動型上場投信)", "Symbol": "1306.T", "Value": 420.0, "PriceType": "Price", "Note": "初回取得"},
+            ]
+        )
+        section = _render_readme_section(observations, [])
+        self.assertIn("JPY/口", section)
+        self.assertIn("ETFは指数そのものではなく", section)
 
     def test_daily_report_replaces_its_own_readme_section(self):
         observations = pd.DataFrame(
@@ -126,6 +170,76 @@ class ReadmeTests(unittest.TestCase):
 
 
 class GeminiReportTests(unittest.TestCase):
+    def test_context_labels_units_stale_yields_and_currency_returns(self):
+        observations = pd.DataFrame(
+            [
+                {"Date": date(2026, 10, 1), "Indicator": "MSCI ACWI", "Symbol": "ACWI", "Value": 100.0, "PriceType": "Price"},
+                {"Date": date(2026, 10, 2), "Indicator": "MSCI ACWI", "Symbol": "ACWI", "Value": 110.0, "PriceType": "Price"},
+                {"Date": date(2026, 10, 1), "Indicator": "ドル円 (USD/JPY)", "Symbol": "USDJPY=X", "Value": 150.0, "PriceType": "Price"},
+                {"Date": date(2026, 10, 2), "Indicator": "ドル円 (USD/JPY)", "Symbol": "USDJPY=X", "Value": 160.0, "PriceType": "Price"},
+                {"Date": date(2026, 9, 1), "Indicator": "日本国債10年利回り", "Symbol": "MOF:JGB:10Y", "Value": 3.0, "PriceType": "Yield"},
+            ]
+        )
+        with patch("src.report_generator.fetch_related_news", return_value=[]):
+            context = _build_market_context(observations)
+
+        by_symbol = {series["symbol"]: series for series in context["markets"]}
+        self.assertEqual(by_symbol["ACWI"]["unit"], "USD/口")
+        self.assertEqual(by_symbol["USDJPY=X"]["unit"], "JPY/USD")
+        self.assertEqual(by_symbol["MOF:JGB:10Y"]["lag_vs_latest_market_days"], 31)
+        acwi_return = next(
+            comparison
+            for comparison in context["currency_return_comparisons"]
+            if comparison["symbol"] == "ACWI"
+        )
+        self.assertEqual(acwi_return["usd_price_return_percent"], 10.0)
+        self.assertEqual(acwi_return["indicative_jpy_return_percent"], 17.333)
+        self.assertEqual(acwi_return["fx_effect_percentage_points"], 7.333)
+
+    def test_numeric_validation_rejects_number_not_in_market_data(self):
+        context = {
+            "markets": [
+                {
+                    "latest": {"date": "2026-10-27", "value": 420.0},
+                    "chart_period_summary": {"first_value": 278.7},
+                }
+            ]
+        }
+        with self.assertRaisesRegex(RuntimeError, "37.14"):
+            _validate_report_numbers(
+                "### 主な指標の動き\nETFの期間安値は37.14です。", context
+            )
+
+    def test_numeric_validation_checks_sections_after_news(self):
+        context = {
+            "markets": [{"latest": {"date": "2026-10-27", "value": 420.0}}]
+        }
+        report = (
+            "### 国内外のニュースと市場の反応\n記事では37.14と報じられています。\n"
+            "### オルカン・S&P 500を保有する人向けの見方\n"
+            "期間リターンは37.14%です。"
+        )
+        with self.assertRaisesRegex(RuntimeError, "37.14"):
+            _validate_report_numbers(report, context)
+
+    def test_numeric_validation_accepts_data_and_derived_values(self):
+        context = {
+            "markets": [
+                {
+                    "latest": {"date": "2026-10-27", "value": 63178.32},
+                    "change_since_previous_observation": {
+                        "difference": 988.67,
+                        "percent": 1.589,
+                    },
+                }
+            ]
+        }
+        _validate_report_numbers(
+            "### 主な指標の動き\n2026年10月27日、日経平均は63,178.32で、"
+            "前回比+988.67（+1.59%）でした。S&P 500とも比較します。",
+            context,
+        )
+
     def test_report_uses_api_key_header_and_recent_data(self):
         observations = pd.DataFrame(
             [
@@ -212,6 +326,11 @@ class GeminiReportTests(unittest.TestCase):
         self.assertIn("1000〜1600文字", prompt)
         self.assertIn("国内と海外の材料", prompt)
         self.assertIn("為替", prompt)
+        self.assertIn("一次データにない市場数値", prompt)
+        self.assertIn("因果関係", prompt)
+        self.assertIn("TOPIX連動ETF", prompt)
+        self.assertIn("ニュースは検索で記事本文を確認できた事実のみ", prompt)
+        self.assertIn("currency_return_comparisons", prompt)
 
     def test_prompt_mentions_optional_related_news(self):
         prompt = _build_prompt({
@@ -292,6 +411,42 @@ class GeminiReportTests(unittest.TestCase):
 
         with patch("src.report_generator.urlopen", return_value=FakeResponse()):
             with self.assertRaisesRegex(RuntimeError, "incomplete report"):
+                generate_daily_report(observations, api_key="test-api-key")
+
+    def test_generated_report_with_unverified_market_number_is_rejected(self):
+        observations = pd.DataFrame(
+            [
+                {"Date": date(2026, 10, 26), "Indicator": "TOPIX連動ETF", "Symbol": "1306.T", "Value": 418.4, "PriceType": "Price"},
+                {"Date": date(2026, 10, 27), "Indicator": "TOPIX連動ETF", "Symbol": "1306.T", "Value": 420.0, "PriceType": "Price"},
+            ]
+        )
+        report_text = "\n\n".join(
+            [
+                "### 今日の市場をひとことで\nETFは上昇しました。",
+                "### 主な指標の動き\n期間安値は37.14でした。",
+                "### 国内外のニュースと市場の反応\nニュースは確認できませんでした。",
+                "### オルカン・S&P 500を保有する人向けの見方\n長期では分散が重要です。",
+                "### チャートで見る直近の流れ\n直近は上向きです。",
+            ]
+        )
+        response_body = json.dumps(
+            {"candidates": [{"content": {"parts": [{"text": report_text}]}}]}
+        ).encode("utf-8")
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return None
+
+            def read(self):
+                return response_body
+
+        with patch("src.report_generator.urlopen", return_value=FakeResponse()), patch(
+            "src.report_generator.fetch_related_news", return_value=[]
+        ):
+            with self.assertRaisesRegex(RuntimeError, "37.14"):
                 generate_daily_report(observations, api_key="test-api-key")
 
     def test_http_404_skips_report_generation_instead_of_crashing(self):

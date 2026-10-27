@@ -15,6 +15,7 @@ from .config import (
     JAPAN_TIMEZONE,
     README_PATH,
     SYMBOL_PRICE_TYPES,
+    SYMBOL_UNITS,
     WORKBOOK_PATH,
 )
 from .excel_builder import build_workbook
@@ -57,15 +58,16 @@ def _render_readme_section(data: pd.DataFrame, chart_paths) -> str:
         "",
         f"最終更新: {datetime.now(ZoneInfo(JAPAN_TIMEZONE)).strftime('%Y年%m月%d日 %H:%M (%Z)')}",
         "",
-        "| 指標 | シンボル | 最新値 | 前回値 | 前日比 | 種別 | 注記 |",
-        "|---|---|---:|---:|---:|---|---|",
+        "| 指標 | シンボル | 最新値 | 前回値 | 前回観測比 | 種別 | 単位 | 注記 |",
+        "|---|---|---:|---:|---:|---|---|---|",
     ]
     for symbol, indicator in sorted(indicator_by_symbol.items(), key=lambda item: item[1]):
         row = latest_by_symbol.get(symbol)
         if row is None:
             lines.append(
                 f"| {indicator} | `{symbol}` | データなし | — | — "
-                f"| {_format_price_type(SYMBOL_PRICE_TYPES[symbol])} | この更新ではデータを取得できませんでした |"
+                f"| {_format_price_type(SYMBOL_PRICE_TYPES[symbol])} | {SYMBOL_UNITS[symbol]} "
+                "| この更新ではデータを取得できませんでした |"
             )
             continue
         prior = previous_by_symbol.loc[row.Symbol] if row.Symbol in previous_by_symbol.index else None
@@ -82,7 +84,8 @@ def _render_readme_section(data: pd.DataFrame, chart_paths) -> str:
         lines.append(
             f"| {row.Indicator} | `{row.Symbol}` | {_format_value(row.Value, row.PriceType)} "
             f"({row.Date}) | {(_format_value(previous_value, row.PriceType) if previous_value is not None else '—')} "
-            f"| {change_text} | {_format_price_type(row.PriceType)} | {note} |"
+            f"| {change_text} | {_format_price_type(row.PriceType)} | "
+            f"{SYMBOL_UNITS[row.Symbol]} | {note} |"
         )
     lines.extend(["", "### 推移", ""])
     for path in chart_paths:
@@ -95,7 +98,8 @@ def _render_readme_section(data: pd.DataFrame, chart_paths) -> str:
             "",
             "- 市場価格・指数・為替・米国債利回り: Yahoo Finance（`yfinance`）",
             "- 日本国債の利回り曲線: 財務省「国債金利情報」CSV（2・5・10・20・30年）",
-            "- 利回りの前日比はbp（1bp = 0.01%）で表示しています。",
+            "- 利回りの変化幅はbp（1bp = 0.01%）で表示しています。",
+            "- TOPIX連動ETFは指数そのものではなく、円建てETFの市場価格です。",
             "",
         ]
     )
