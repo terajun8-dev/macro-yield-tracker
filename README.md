@@ -21,7 +21,7 @@ Google AI Studioで発行したキーを、リポジトリの「Settings」→�
 <!-- MARKET-DASHBOARD:START -->
 ## 市場ダッシュボード
 
-最終更新: 2026年10月27日 14:42 (JST)
+最終更新: 2026年10月27日 14:55 (JST)
 
 | 指標 | シンボル | 最新値 | 前回値 | 前日比 | 種別 | 注記 |
 |---|---|---:|---:|---:|---|---|
@@ -30,16 +30,16 @@ Google AI Studioで発行したキーを、リポジトリの「Settings」→�
 | NYダウ | `^DJI` | 52,361.58 (2026-10-26) | 52,215.16 | +146.4 (+0.28%) | 価格 | 前回取得日比: 3日 / 前日比: +146.4 (+0.28%) |
 | S&P 500 | `^GSPC` | 7,676.77 (2026-10-26) | 7,623.68 | +53.09 (+0.70%) | 価格 | 前回取得日比: 3日 / 前日比: +53.09 (+0.70%) |
 | TOPIX | `^TPX` | データなし | — | — | 価格 | この更新ではデータを取得できませんでした |
-| TOPIX連動ETF (NEXT FUNDS TOPIX連動型上場投信) | `1306.T` | 420.40 (2026-10-27) | 418.40 | +2 (+0.48%) | 価格 | 前回取得日比: 1日 / 前日比: +2 (+0.48%) |
+| TOPIX連動ETF (NEXT FUNDS TOPIX連動型上場投信) | `1306.T` | 420.00 (2026-10-27) | 418.40 | +1.6 (+0.38%) | 価格 | 前回取得日比: 1日 / 前日比: +1.6 (+0.38%) |
 | VIX指数 | `^VIX` | 18.3900 (2026-10-26) | 19.4500 | -1.06 (-5.45%) | 価格 | 前回取得日比: 3日 / 前日比: -1.06 (-5.45%) |
-| ドルインデックス | `DX-Y.NYB` | 102.10 (2026-10-27) | 101.96 | +0.14 (+0.14%) | 価格 | 前回取得日比: 1日 / 前日比: +0.14 (+0.14%) |
-| ドル円 (USD/JPY) | `USDJPY=X` | 157.65 (2026-10-27) | 156.83 | +0.821 (+0.52%) | 価格 | 前回取得日比: 1日 / 前日比: +0.821 (+0.52%) |
+| ドルインデックス | `DX-Y.NYB` | 102.08 (2026-10-27) | 101.96 | +0.122 (+0.12%) | 価格 | 前回取得日比: 1日 / 前日比: +0.122 (+0.12%) |
+| ドル円 (USD/JPY) | `USDJPY=X` | 157.75 (2026-10-27) | 156.83 | +0.921 (+0.59%) | 価格 | 前回取得日比: 1日 / 前日比: +0.921 (+0.59%) |
 | 日本国債10年利回り | `MOF:JGB:10Y` | 3.057% (2026-09-30) | 3.082% | -2.5 bp | 利回り | 前回取得日比: 1日 / 前日比: -2.5 bp |
 | 日本国債20年利回り | `MOF:JGB:20Y` | 3.877% (2026-09-30) | 3.887% | -1.0 bp | 利回り | 前回取得日比: 1日 / 前日比: -1.0 bp |
 | 日本国債2年利回り | `MOF:JGB:2Y` | 1.952% (2026-09-30) | 1.976% | -2.4 bp | 利回り | 前回取得日比: 1日 / 前日比: -2.4 bp |
 | 日本国債30年利回り | `MOF:JGB:30Y` | 4.098% (2026-09-30) | 4.126% | -2.8 bp | 利回り | 前回取得日比: 1日 / 前日比: -2.8 bp |
 | 日本国債5年利回り | `MOF:JGB:5Y` | 2.399% (2026-09-30) | 2.425% | -2.6 bp | 利回り | 前回取得日比: 1日 / 前日比: -2.6 bp |
-| 日経平均株価 | `^N225` | 63,282.18 (2026-10-27) | 62,189.65 | +1093 (+1.76%) | 価格 | 前回取得日比: 1日 / 前日比: +1093 (+1.76%) |
+| 日経平均株価 | `^N225` | 63,178.32 (2026-10-27) | 62,189.65 | +988.7 (+1.59%) | 価格 | 前回取得日比: 1日 / 前日比: +988.7 (+1.59%) |
 | 米10年債利回り | `^TNX` | 4.986% (2026-10-26) | 4.988% | -0.2 bp | 利回り | 前回取得日比: 3日 / 前日比: -0.2 bp |
 | 米13週国債利回り | `^IRX` | 4.025% (2026-10-26) | 4.032% | -0.7 bp | 利回り | 前回取得日比: 3日 / 前日比: -0.7 bp |
 
@@ -71,80 +71,56 @@ Google AI Studioで発行したキーを、リポジトリの「Settings」→�
 <!-- AI-DAILY-REPORT:START -->
 ## AIマーケット日次レポート
 
-生成日時: 2026年10月27日 14:42 (JST)
+生成日時: 2026年10月27日 14:55 (JST)
 
 ### 今日の市場をひとことで
-日本市場では、2026年10月27日の日経平均株価が前営業日比1.757%高の63282.179688円となり、TOPIX連動ETFも0.478%上昇しました。これは、前日の米国株式市場でAI関連への巨額投資を巡る懸念が和らぎ、株価が上昇した流れを引き継いだものと見られます。ドル円は157円台半ばで推移し、ドルインデックスも小幅に上昇しました。チャート全期間では、日経平均株価が2024年10月28日から2026年10月27日までに63.92%上昇しており、当日の変化は長期傾向と同じ方向です。ニュースでは、ロシアとウクライナの局地停戦合意が報じられていますが、これが直接的な市場の値動きに与える影響は限定的と捉える必要があります。総じて、AI関連株への安心感からリスクオンの動きが見られた局面ですが、米国の経済指標や金融政策の動向には引き続き注意が必要です。
+2026年10月27日の日本市場では、日経平均株価が前営業日比で1.59%高の63178.32円、TOPIX連動ETFも0.382%高の420.0円と、買い戻しが優勢となりました。これは、前営業日の米国市場で主要指数が上昇した流れを引き継いだものと見られます。一方、米国市場（10月26日終値）では、S&P 500が0.696%高、NASDAQ総合が0.825%高、NYダウが0.28%高と、主要3指数が揃って上昇しました。ドル円は157.751円と、前営業日比で0.587%のドル高円安に推移しています。チャート全期間（2024年10月28日から）では、日経平均株価が約63.65%上昇、TOPIX連動ETFも約50.7%上昇しており、当日の上昇は長期的な上昇傾向と一致しています。ニュースでは、ウクライナ南部での局地的な停戦合意や、イスラエル総選挙の投票開始などが報じられていますが、これらの地政学的な動きと市場の直接的な因果関係は現時点では明確ではありません。総じて、前日の米国株高を好感したリスクオンの局面ですが、中東情勢の不透明感や米長期金利の動向には引き続き注意が必要です。
 
 ### 主な指標の動き
-2026年10月27日、日経平均株価は63282.179688円で、前営業日（2026年10月26日）から1092.53125円（1.757%）の大幅な上昇となりました。TOPIX連動ETF（1306.T）は420.399994円で、前営業日（2026年10月26日）から2.0円（0.478%）上昇しました。TOPIX指数そのもののデータは取得できませんでした。
+2026年10月27日の日本市場では、日経平均株価が63178.32円、TOPIX連動ETFが420.0円でした。TOPIX指数はデータが取得できませんでした。米国市場（10月26日終値）では、NYダウが52361.58ドル、S&P 500が7676.77ドル、NASDAQ総合が26169.38ドル、MSCI ACWIが157.57ドルでした。
 
-米国市場では、2026年10月26日のS&P 500が7676.77002ポイントで、前回の観測日（2026年10月23日）から53.089844ポイント（0.696%）上昇しました。NYダウは52361.578125ドルで、前回の観測日（2026年10月23日）から146.417969ドル（0.28%）上昇、NASDAQ総合は26169.380859ポイントで、前回の観測日（2026年10月23日）から214.041016ポイント（0.825%）上昇しました。
+為替市場では、ドル円が157.751円と、前営業日（10月26日）の156.830円から0.921円のドル高円安となりました。ドルインデックスは102.082と、前営業日（10月26日）から0.120%上昇しています。
 
-為替市場では、ドル円（USD/JPY）が2026年10月27日に157.651001円となり、前営業日（2026年10月26日）から0.820999円（0.523%）のドル高円安に推移しました。ドルインデックスは102.099998で、前営業日（2026年10月26日）から0.139999ポイント（0.137%）上昇しています。
+金利市場では、米10年債利回りが4.986%と、前回の観測日（10月23日）から-0.002%（-0.2ベーシスポイント、bp）とほぼ横ばいでした。ベーシスポイント（bp）とは、金利の変動幅を示す単位で、1bpは0.01%に相当します。米13週国債利回りは4.025%と、こちらも-0.7bpの低下でした。一方、日本国債10年利回りは3.057%（9月30日時点）と、前回の観測日（9月29日）から-2.5bp低下しています。日本国債のデータは9月30日時点と、株式市場や為替市場の最新データとは対象日が異なるため、直接的な連動関係を判断するには注意が必要です。
 
-金利市場では、日本国債10年利回りが2026年9月30日時点で3.057%と、前回の観測日（2026年9月29日）から-0.025%（-2.5ベーシスポイント、bp）低下しました。ベーシスポイント（bp）とは、金利の変動幅を示す単位で、1bpは0.01%に相当します。他の日本国債利回り（2年、5年、20年、30年）も同様に2026年9月30日時点のデータであり、前回の観測日（2026年9月29日）からそれぞれ-2.4bp、-2.6bp、-1.0bp、-2.8bp低下しています。米国10年債利回りは2026年10月26日時点で4.986%と、前回の観測日（2026年10月23日）から-0.002%（-0.2bp）低下しました。米13週国債利回りも2026年10月26日時点で4.025%と、前回の観測日（2026年10月23日）から-0.007%（-0.7bp）低下しています。
-
-市場の不確実性を示すVIX指数は、2026年10月26日に18.389999ポイントとなり、前回の観測日（2026年10月23日）から-1.060001ポイント（-5.45%）低下しました。VIX指数は「恐怖指数」とも呼ばれ、数値が高いほど市場の不安心理が強いことを示します。
-
-株式市場では、前日の米国株高が東京市場に波及し、特にAI・半導体関連株が買われる展開となりました。ドル円は米金利の失速により伸び悩む場面も見られましたが、全体としては堅調に推移しています。日本国債利回りは9月末のデータであり、最新の市場動向とは異なる可能性がある点に留意が必要です。
+市場の不確実性を示すVIX指数は18.39と、前回の観測日（10月23日）から-5.45%低下しました。VIX指数は一般的に、数値が高いほど市場の不安心理が強いとされます。
 
 ### 国内外のニュースと市場の反応
-国内では、2026年10月27日の東京株式市場で日経平均株価が一時1400円を超える大幅な上昇を見せました。これは、前日の米国株式市場でAI関連への巨額投資を巡る懸念が和らぎ、株価が上昇した流れを引き継いだためと報じられています。特に、AI開発企業アンソロピックが株式上場に向けた目論見書を公表し、予定通りに進む見通しとなったことで、市場に安心感が広がったことが背景にあるとされています。東京市場では、これまで売られていたAI・半導体銘柄が買い戻される動きが顕著でした。
+国内では、2026年10月27日に「日米半導体協業フォーラム」が開催され、共同開発や技術提携の事例が紹介されました。米国半導体展示会「セミコンウェスト2026」の会期中にジェトロとカリフォルニア州知事室ビジネス・経済開発局が共催したもので、半導体関連企業の協業事例が複数紹介されています。前日の米国市場で半導体関連株が上昇したこともあり、このニュースは日本の半導体関連株にも好影響を与えた可能性があります。また、SBIホールディングスとスターテイルがブラックロックと共同で、トークン化MMFと円建てステーブルコイン「JPYSC」の連携に向けた基本合意書を締結したとの発表もありました。これは、日本におけるデジタル資産エコシステムの構築に向けた動きとして注目されます。
 
-海外では、ロシアとウクライナが、ロシアが占領するウクライナ南部ヘルソン州オレシュキ市において人道支援活動を促進するための一時停戦に合意し、日本時間27日午前10時に発効したと報じられています。この停戦は、米国ファーストレディのメラニア・トランプ氏の仲介で調整されたとされています。また、米中間選挙が11月3日に実施される予定であり、トランプ政権の政策運営や米国株、米金利、ドル円相場への影響が注目されています。特に、下院では民主党が優勢との見方が強まっており、共和党は豊富な資金を投じて巻き返しを図っている状況です。
+海外では、ロシアとウクライナがウクライナ南部オレシュキ市での局地的な停戦に合意し、日本時間27日午前10時に発効しました。これは人道支援活動を促進するためのもので、メラニア・トランプ米大統領夫人が仲介したと報じられています。また、イスラエルでは27日に総選挙の投票が始まり、ネタニヤフ首相の続投の可否が焦点となっています。この選挙は、2023年10月のハマスによる襲撃以降初めての国政選挙であり、中東情勢に影響を与える可能性があります。
 
-これらのニュースと市場データとの関係としては、AI関連株への安心感が日米の株式市場を押し上げた主要因と考えられます。一方で、ロシア・ウクライナの停戦合意は地政学リスクの一時的な緩和要因となり得るものの、市場全体への直接的な影響は限定的と見られます。米中間選挙の動向は、今後の米国の財政政策や金利動向を通じて、為替や株式市場に中長期的な影響を与える可能性があります。
+米国市場では、生成AI大手のAnthropic（アンソロピック）が新規株式公開（IPO）に向けた登録届出書を公開し、2026年1〜6月の売上高が前年同期の約14倍に達していたことが明らかになりました。これにより、先週「AI投資の資金繰り」への懸念で売られていた半導体株に買い戻しが入り、米国株主要3指数が上昇する要因の一つとなりました。
 
 ### オルカン・S&P 500を保有する人向けの見方
-MSCI ACWI（全世界株式）は2026年10月26日時点で157.570007ドル、S&P 500は同日時点で7676.77002ポイントでした。MSCI ACWIは2024年10月28日の119.440002ドルから2026年10月26日までに31.924%上昇しており、S&P 500も同期間に5823.52002ポイントから31.824%上昇しています。両指数ともに長期的に堅調な上昇トレンドを示しており、世界株と米国株の重なりや違いを理解することは重要です。S&P 500は米国の大手500社の株価指数であり、MSCI ACWIは先進国と新興国の大型・中型株を網羅する世界的な指数です。米国株は世界株の中でも大きな比重を占めるため、両者の値動きには強い相関が見られます。
+MSCI ACWI（全世界株式）は2026年10月26日時点で157.57ドルとなり、2024年10月28日の観測開始時点から約31.92%上昇しています。S&P 500（米国主要500社）も同日時点で7676.77ドルと、観測開始時点から約31.82%上昇しており、世界株式と米国株式がほぼ同程度の成長を示していることがわかります。これは、MSCI ACWIにおいて米国株式の比率が高いことを反映していると考えられます。
 
-為替のドル円は157円台半ばで推移しており、日本円ベースでの資産評価に影響を与えます。円安は海外資産を円換算した際の評価額を押し上げる要因となります。また、日米の金利差も重要です。米国10年債利回りが4.986%であるのに対し、日本国債10年利回りは3.057%（9月末時点）と、依然として金利差は開いています。金利は企業の資金調達コストや将来のキャッシュフローの割引率に影響するため、株式の評価にも間接的に影響し得ます。
+為替市場ではドル円が157.751円と円安傾向にあり、円建てでこれらの資産を保有している場合、為替差益が評価額を押し上げる可能性があります。しかし、為替レートは常に変動するため、将来の評価額に影響を与える要因となります。また、米10年債利回りが約4.99%と高水準で推移していることは、株式の割引率に影響を与え、企業収益の将来価値評価に影響を及ぼし得ます。
 
-短期的な市場の変動は避けられないものですが、オルカンやS&P 500のような広範な指数への長期分散投資は、個別の企業や国のリスクを軽減し、世界経済の成長を取り込むことを目指すものです。日々の値動きに一喜一憂せず、自身の投資目標とリスク許容度に基づいた長期的な視点を維持することが重要です。個別の売買判断や資産配分については、ご自身の判断で行う必要があります。
+長期的な分散投資を考える上で、オルカンやS&P 500のような広範囲に分散されたインデックスファンドは、個別の企業リスクを低減し、市場全体の成長を取り込むことを目指します。短期的な市場の変動に一喜一憂せず、自身の投資目標とリスク許容度に基づいた長期的な視点を持つことが重要です。個別の売買や資産配分については、ご自身の判断で行う必要があります。
 
 ### チャートで見る直近の流れ
-TOPIX連動ETFの直近の数観測では、2026年10月21日の425.600006円から10月23日には416.299988円まで下落した後、10月27日には420.399994円へと反発しています。チャート期間（2024年10月28日から2026年10月27日）では、最初の観測値278.700012円から最新値420.399994円へと50.843%上昇しており、長期的な上昇トレンドにあります。期間高値は2026年10月6日の440.399994円、安値は2026年3月31日の37.139999円であり、現在値は期間高値に近い水準で推移しています。
+TOPIX連動ETFは、直近の数観測（10月21日から27日）では425.60ドルから420.0ドルへと推移し、一時下落する場面もありましたが、最新日には反発しました。チャート全期間（2024年10月28日から2026年10月27日）では、278.70ドルから420.0ドルへと約50.7%上昇しており、長期的な上昇トレンドの中にあります。期間高値は2026年10月6日の440.40ドル、期間安値は2026年3月31日の37.14ドルであり、現在の値は期間高値に近い水準で推移しています。
 
-MSCI ACWIの直近の数観測では、2026年10月20日の158.770004ドルから10月23日には156.800003ドルまで下落した後、10月26日には157.570007ドルへと反発しました。チャート期間（2024年10月28日から2026年10月26日）では、最初の観測値119.440002ドルから最新値157.570007ドルへと31.924%上昇しており、こちらも長期的な上昇トレンドです。期間高値は2026年8月13日の162.479996ドル、安値は2025年4月8日の103.589996ドルであり、現在値は期間高値からやや下落した位置にあります。
+日経平均株価も同様に、直近の数観測（10月21日から27日）では64621.24円から63178.32円へと推移し、一時下落しましたが、最新日には大きく反発しました。チャート期間（2024年10月28日から2026年10月27日）では、38605.53円から63178.32円へと約63.65%上昇しており、こちらも明確な上昇トレンドを示しています。期間高値は2026年6月25日の72366.34円、期間安値は2025年4月7日の31136.58円であり、現在の値は期間高値よりは低いものの、期間安値からは大きく上昇した位置にあります。
 
-ドル円の直近の数観測では、2026年10月21日の158.268005円から10月23日には156.494003円まで下落した後、10月27日には157.651001円へと反発しています。チャート期間（2024年10月28日から2026年10月27日）では、最初の観測値152.951996円から最新値157.651001円へと3.072%上昇しており、緩やかな円安トレンドが続いています。期間高値は2026年7月29日の163.863998円、安値は2025年4月22日の140.876007円であり、現在値は期間高値よりは低いものの、中程度の水準に位置しています。
+米国市場のS&P 500は、直近の数観測（10月20日から26日）では7712.57ドルから7676.77ドルへと推移し、一時的な調整が見られましたが、最新日には反発しました。チャート期間（2024年10月28日から2026年10月26日）では、5823.52ドルから7676.77ドルへと約31.82%上昇しています。期間高値は2026年10月6日の7818.93ドル、期間安値は2025年4月8日の4982.77ドルであり、現在の値は期間高値に迫る水準です。
 
-日本国債利回りのデータは2026年9月30日までのものであり、最新の株式や為替のデータとは更新日が異なるため、同列に比較する際にはその時間差を考慮する必要があります。直近の数観測では、日本国債10年利回りは2026年9月28日の3.082%から9月30日には3.057%へと低下しています。チャート期間（2024年10月28日から2026年9月30日）では、最初の観測値0.981%から最新値3.057%へと207.6bp上昇しており、長期的に金利上昇トレンドが続いています。期間高値は2026年9月28日の3.082%、安値は2024年11月5日の0.944%であり、現在値は期間高値に近い水準です。
-
-米国市場（S&P 500, NYダウ, NASDAQ総合, MSCI ACWI, 米国債利回り, VIX指数）の最新データは2026年10月26日時点であり、日本市場（日経平均株価, TOPIX連動ETF, ドル円, ドルインデックス）の2026年10月27日時点のデータとは更新日に1日の差があります。このため、日本市場の当日の動きは、前日の米国市場の動向を織り込んでいる可能性があります。
+なお、日本市場のデータは10月27日時点、米国市場のデータは10月26日時点、日本国債利回りのデータは9月30日時点と、市場や指標によって最新の更新日が異なります。これらの違いを考慮し、異なる指標を同列に比較する際には注意が必要です。
 
 ### 参照したニュース・資料
-- [livedoor.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEEYhmnHBQtZeY10WMpOJc5FgpGA-QyeBnqDlPxeryu1yHDdek6sA-dzC0lDVngxl3K2J2Or2fzwJnKWJbPm5DWZHsjdVeRezBa5t67wIgQSOuvSA2hvAyo6Xs5EwcOAjAg65TJXwvGJZvkNu4=)
-- [kabutan.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHiGJFFIf6R4UWFjlkw7Vsp2U6B5v2Vsgk-kowmbUbc5cUKnDb2lJUGb_eFKxGTCCFjaHYai3Z7IcFc9oSmUGGAz665FWpm6U9RVNULEBK7YZXgJUIBOyQGu2Y6xTLeBzEhn75HhKEmflIgaJpNQg==)
-- [kabutan.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGRAozJD7agLj2Oz3nIRb02QdhJ9Fm2qOH6yW7wskX5AqQTEbCOajnsyTBkPHcvE5mk8G8zA1BRNkgIyhvAoSmrTqGXk9UzpZLIjcdkNHPeZnmWk-qQKNaiuiZYRjxD2v73V2Q=)
-- [chiba-tv.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEJkrWlx7VWXUmBR8WtRoqI4LRPqOmIHgRj6gCs4zpIR9vpHX-pBqAmpw3sICwDuh2TH_zVecBEkLyPdyJEkTqyUZ9HqsgG9nULP--FyyRy_m_NHLGkbVtx6p8WH6-3DHBBQv4zm3uvmp_g2nhp)
-- [oanda.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFYI--hMwFrZTvf3WM-pwPcOkLOdhc7oaFrTb3tSn72_X1ib45fii2JqRH5O9EKlnFerMVCoTrskv2Wh40kTk5bKgxg4STISbGHNYgUFiqADXuYSzENgfvx6YHXfitUVDzRJWo6F2rRQUZCv3T7Fh_xYbvvIeeTNq-_L1thVO5hMZZA)
-- [kabutan.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHL6R6fv5aPnABO0SQ1sB2wZQE-DAB1VOEvGl_Zz2JBed7CT42VJGScr88PmsovFSTcDqGT1AxcKSX6NdZKcAvCVdlHOzTheNagvMosLRrFT5Hk7pqP2NK1EFDaibRDigCRjFx0z3wxj2qVyiOOAQ==)
-- [kab.co.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEbG2mtS2jaeWlKbg3b0RF1EQR-gt7QWn03ClKVNO_rrFbZHdLdyh1PfwbdPk3aEqgNA0fvFW5lHNTq8Yu2PUjy3nDpiza7bHEUAr0lifQbpa62yNQz8m0LWNqvsq8vnRxM43693IY=)
-- [oanda.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFkhcRohvLXEmg82LU6zxIs74KslOyiB_JtpSe3nwmj5BwjMOEBRMlvNIYvyCG817w_OuN2iBu4FpRWxebc3Pw5xIgifAYqgbdhquYvgMytYZvR2xse5u7QQQt1z4Q2hyxn_vrfEpBQnKnPpM-3nVgKsqwVpxCMxmFDddg=)
-- [kabutan.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQES_0_W-WaLycV7czsqwTEYzO6PXHG-sAkM9bkKuFEN4BW9E5zjx4OF_rD38t21NGfEtafpzUePcmn6_qF2OrkhHUyhys9ce5gQtbmBBpQ0cTJKt6idVQ9c9NV_mxtp-k3NuILk6vIW0pQpKJy_TQ==)
-- [investing.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEEOPTqOUMTQRwv8SxQwFjirqdG504DtT_ItFAHmYd6PjzxyJSPqSiQrGhDyzRrQcpJicZiJWL-aYXlMplfpewZzJYR1TeQH5l_naP7ZFrlSVud55bo7dSVkgGHWMlV8BHrIlVMdl_KLkwZKRtTWmuEfWqo)
-- [zaikei.co.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFmNJNT9zIMsYUlkas789AKKnTiaZoJSUYPf__g_lA1JRihZNUBiKFE6m7_-39iYRbvnB_g8UO6Y_ADmKkgHVq9v_8EjhdD0CI_W-CbkKF4lEmVfY-YfR6aPnbdIGhBdPV6w0evhOPuSgwesTVa6fpc)
-- [note.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFfT9j7TCwNV3SfIhRi0_zqCA_i1J5f90KjbhLwyRpk3e5NwzsqiLx_CGvyFN-UrhQ8qYJ_d8doHbtTWZWTBy_Ehm9laom3syTUKWXk8a6mREiSZFqMA6hfe69C3Voa29okKnuULPcfwg==)
-- [kabutan.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHqeCwsJ-30JdZX9H0m2YA8rYIY7pTHo2hmIfu_A-RpB5xhCCN_RjEI5wJF8Dg42BiSo_-Wt0rmGnsfc7pAV3b4gX9yYW3vN4awnzpPVo6Q8ufqpzxhO6smbV40fb4zUOEX7TCQu0JicQBjBftHVA==)
-- [yahoo.co.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQECztZSpGegZLe9YjrolrhNQYBCcQMCdLbuvMgp2lN4YIYJFWrknVdE2vJHga77jt3ZY_rvqSjTIwVjylELxjtMe6L8pZxVM3SfkuDqy3T3wqVmG3AnFiKSNxBXmxlaDie7h9qJbhUhLRfs8Dwgmog1VgBUwJbh6gHji1pUUFYfwps9A0ct2BqVBBPT)
-- [minkabu.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEtyqhkIrlmEo5NTYiPOZJYuUGgCiKMe0gzRTSbVUrBvjTFe1WK0FzSCR4S6fOk-zD_VoxfYA2o0obmi3kIA7pgSLsDEn_fYZ7mwFu2eZiTdfsiaFGKTd_TnoYgRQ==)
-- [kabutan.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHCGDW9UNIZ2kEmimyU1wL9BJIme9uuQ92NZO709DLH1kEixexlh_-EgEVNDqaPF7aWux7jwJenELMGsklrvjAdGDFMFa3M1DJ9TJ8NbH7H_kLyDWHaDBMnAoWJm9fc2q4EmLA=)
-- [oanda.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF9XdW8DGtnR-ey0sBk7nICdJW4SNKg1pnJqJB4k8Ast81iyqATH6bhlaIZXeHlT3SkP9J0nDuoYU0Wkk5hgmG41tsTOokaDH5C4YNonSeJjBOTC7dWEVh33T4VATtNo1n4qYEfzxd-CpyKDB6nADN-TCjSkF2ACCWm5zo2fxizAgyo)
-- [gaitame.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG9cW5bNHPxEbdeuYSQ5Jp6Qsc1gwtfVobl53TKajThGBREuelRIKju-Cii0E2Mpi8Vn2HVOWH5HtvQwSVrjE4m9UpVV_EobVAAEcvPcnUEwY5JFOjq-RTs2earRkRFA5yPPR1C6yKR3fyZ535v1jMS)
-- [oanda.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFirdToF3BXAdKRNqhhPDMQKj1boNYAFEVLva8HYj1SZDIQvM-Ii3y1Gmc2zQE3JKzddOQLwF_Y2-NQ6Isx7wEvYi0UPOPaj5zD2Rk8w22SJeZfshHDKiDhQD4As5au01AuKCqUX8WSPZY7gchufpxl1gA6CUt4TAIy7XTn)
-- [fnn.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHpFOoY1CvC_GwNmBL7xCepcdqNlV_G6YOih-DVgrlLOh5aFiMDmdNa8IZ5UWhmWZIMcEuPj7_y4n5TqOR9nr1M0Ni4b5vWMdkxkPEewMkYnWmNHVAdiZwRlgtvHjgOXM8=)
-- [livedoor.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHnDt3zkS-IYUINCMyVoMxAbntCW3eUG9G1xgjULHAV4GDjiry7JsPYuU2nuwOnBlGeKSHKofSVO1SSDA960NxHgXzUdEbqTabxLU9YGczsDzW3LQkAArtQ4xGooXX0iTwcVrMcs3JPNi47Jn4=)
-- [investing.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFQNh0BLA8VRFcLUJB_D_p2sLlR9-JLNEwi1kiRViTrDH46us4KaZduOFjPOqUAWg0_oSCfwn7onnMuIwbpaDl5y3WLVcmOM-tpncVKM4OKOSzL5PDSgh2lQ8sNTiGyQKdSxmawTxG0res9ASitZj-F8OSfHTM=)
-- [laodong.vn](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGLQc6IENb6G2raywXqQbAKkVGunSikJcPfdI8Z4gkhUnWUDQCb1P5d66nT2vMgxWhHDbAdrvJV0ZO97kRFLN3eyeuBnCxitlMK9DEay4n7yKXpb9u0FpIC5K1lqFuHLHmb-fvfXoPcPvJ1V5kgsr3BjJwVVs3SW_JZY_GwyUhCqXZf4jeEq1zLckm2FP1Rseoh2_FSFmHybkwQ9u1CzXFqAUwyyfSI6ThCftxXy12iBvhLGXq6T1vxUsBHOKg=)
-- [ukrinform.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHewVR86LnzC7dBuqHDu2qK0T9ZBrlNZl521rRoew2y9KVJyKp5uRo4AMjorDM8SPvROJcTFLsnz2kFkl_HENn2xLosa9UnNK8JNXCoafcMV5u4ObtzmBhBYCSICn5tk3_unbaReXhR3RJEwFq00DTphZPvo5x4B2VhxBU5jir8uYCr3wzY9gO3S6gf6jjkEscD-bQWnbZrOnS9vBT9mWPuh9GjitwJzAmNLsVP3T8uVJ5ZkNjIRxtwPA==)
-- [minkabu.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEf58N_tTfnxgt1UrHsr-ugCkCkOBZ5MOBHQtYHTTY_wEkObvvew_U5eK2IZPA_D10v84A_pcjiJk24qB5YF88Nr2ijB5XFVQHcoQKfCAUTIEbyLsSCBv1ukgyuMw==)
-- [gaitame.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF_4IOnzg7aMhJlTcDmw_W8wyGy4qPmDt9tU3f2nVlN7zgwA-wnVocaKJLftD_wocObWpsfwxIyWKVhZkXaCznLGc8u1aSZhf_QUARmDAJD7Ly5fiylTf80TfurmH_7bsm2vu6x6WTpieYdw4ZcHBuK)
-- [seikyoonline.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFSRvY9cmFcCEzkqEIHQ-4O-L5gSWfZLLzJnx2DOdPeWVhsaULY3bazzGVBPOua2tIE5kU9SKSJNkDVHN2_Doccwq6n2EPtIyhoyatte76EeXBRBWeSqut5GaQ6KWfzcTItnqlc964Y-yHJyD_er1xMpgLv2AuepQHRF16UYl1KeA==)
-- [mainichi.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH9HIxUgExZYxrP8BJGI5ovy5lXwxwLBzT-A52omYeJmpeQ3WKQYg4VGuimLe6x4kCJ1BY7YkoeFsNJCUXL3RZZacJr_96UZUcOHQo2sZSH4R0w0OXnrTLDDGhenmRes6jbOsMxo_R4ordtn9x9NAVHfWEUkQ==)
-- [mainichi.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGg99z50lq-wFgZPrE5B1OmUysR0nIfPZ4M5wn3gT3x4q1pQg31QBC4uXaEWADHbImOrqUtm_JSod0Ajp76gtblCQMBy0-R-HlCGSr2DtsS6F-nRxkedZUuSu3Evoyhz7jNOY9W-AgBR7isaToCay9meFsQRQ==)
-- [dlri.co.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGhDMcLd3v5itpJjHm9MGvgsBuNXcAzCfIM_-TfQH4_D6QCfe7y7rBbSPE1kU7ELXVvr0Bx0PN_n8hQbyD-E44Rn0AuFoChkXqys-VnNuixA5i4vQ6v2A9k5LQJuhD77t-L5iisB2bbfSQC)
+- [kabutan.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHHaZUObP8P2dLzHHPEFG4fI5_H78vdhGgsGmnrYX6jdm_MSCOW7gzYmdFXytYBr3lZybDSll9bpwcJM3YluEmiGoKXmHOcTMdTVDh3KDKI4utr8Gz37m84Bgs05yfm70RvUv4=)
+- [kabutan.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHBpC46Uid3uALd6wkVgtX3kNmt7fiLnzQCNtlwGt5v-MshLoWojU5n3qHC17KhYJz10pWqABxxLUwgkZwDPYguUoeLt2ZgfcbWaOLWuSCLkV9f8cTTF_gZOG9wUp1pcrCK7n7GtIiSorVwG5bMVA==)
+- [note.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGk35rFE2vH8CnmQsqyRVNiD9t9WKrviAxTCrZZ_tNwG8p7DAkezROGwnqZFVAWcbElCJkdtBsbyi5I029SeodgzeJntyNHY_xN8LGm_4kuTzpM0rlElijqYrpUZDG-s1Gv2kIaY21dfw==)
+- [jetro.go.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH8vSdeMGjVVA-MfRrsqdZYYRIGVu2rMfLM1y5N-lUiDZuVNdegn1Hd-iPH-fus8bqdee_S-0FoaZgVtaTMXwFKKQ0rnaW-llUdcCndtcIFv1Tqzd2GfcbR8sDrTHITnXqD9n0FgF6ouSzlcoNKNLaAh6lyiotzvII=)
+- [sbigroup.co.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH0cCoxXYVncp_h-vNAGqtPXf7VhAdSTNP4OCDdutc4dCmzMrYfd4n2fXFeoOENpFgXPOVEETyfXyrS5x-yyU-zJXD7YaHEigup-CC0QV99LH76mhY5eF_EFlCkYrRp0yaEE-RxyPhyjq74r2lWqTo=)
+- [fnn.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGAs0p0uC0FndQIxZGzwp9eRdub3NBzCs_NwD2OYc5yMsIX2OabjH_t-APSTfKnmghP0SvcS5TzeW_dV5KlkCuWR8zP8O7hr8KlYH6z22VhAGMNBrWqiZ9vhBy5CaeeXGU=)
+- [livedoor.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHJO0cdA91q_3ieB3OgF-uLBKAL9soEwtKj5wp5FLAy6oH9y2VdPOLFrBNvWK9mL3Naj9UQRKVLIemQZxcUtndUlIbHrKj7NQ6WPFWBRqSitebdNVoLCyz_olGI3NFcQcRX2RfAQzvQZ6UCF6k=)
+- [afpbb.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGhBv99YgsUgMO5eel2t5mzWStQKNz_89jtm00MDElqn8vuxphgyrP_g6aHVla3_yFCxzP_GQ3jaOzLQwHHzu6I641eC0r8O_k_9iUpJr6a9DF9ubSqTIKd0vnOHU9AOK_pgck=)
+- [mainichi.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGDeikHGrZ3E27vhYL_-00IV4koAqfUxet-zwTvSPS4cdUwpo77DpGKUb153scPwddJ6l3IHE28Q5iUb35uuT9aT6O_pvZ0JVQsZ6BagcBxM7PL0Qtt-auhygskF9qla7l7j4IFEiVDiDJYqgGXPFg8MU_PTQ==)
+- [fnn.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFrmpBn7LgBumMj1AhLrYDpdqHF9X1JyQ6NfukaOSclZ3k5dQkASrgBJB-HJ00Uf0L-E3MiODUPVUvz6btGNdvyPP-NiuHsvg8tRJJ0oFpUzBKN_MuNpOkYdvveeCk8BtU=)
+- [afpbb.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFYfxPkoYjYiv-xhNRj6BWTZVTUm3Z1gjnQ1n8FpRF383IZMS9O7saU49HOyW80FC_JXjRXyDlI_IyexFmpaHItRxM9CyAD1Dzzzd5xOu7xY2xl7tQNnR_biDnjrvlEDgNX4bo=)
+- [dlri.co.jp](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHDzzdgthyz6iq2SjRdVaqHk2uBE6MCNP_B0PWBE_LA-5t3fT_Lt5zl6HOmsaXPMctNPqAYceu11nF_-cqUS5IOj-GCDLvty8zrC2GK2eRjM_9Q0DG2upToRfThg1D11u1wW24jz0l-ZlZN)
 
 ※公開情報をもとにした一般的な解説です。特定の個人への投資助言ではありません。
 <!-- AI-DAILY-REPORT:END -->
