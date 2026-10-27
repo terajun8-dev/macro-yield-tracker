@@ -114,15 +114,25 @@ def _replace_marked_section(content: str, start_marker: str, end_marker: str, se
     return content.rstrip() + "\n\n" + section + "\n"
 
 
-def update_readme_dashboard(data: pd.DataFrame, chart_paths, daily_report: str | None = None) -> None:
+def update_readme_dashboard(
+    data: pd.DataFrame,
+    chart_paths,
+    daily_report: str | None = None,
+    report_status: str | None = None,
+) -> None:
     content = README_PATH.read_text(encoding="utf-8") if README_PATH.exists() else "# macro-yield-tracker\n"
     dashboard = f"{START_MARKER}\n{_render_readme_section(data, chart_paths)}{END_MARKER}"
     content = _replace_marked_section(content, START_MARKER, END_MARKER, dashboard)
-    if daily_report:
+    if daily_report or report_status:
         generated_at = datetime.now(ZoneInfo(JAPAN_TIMEZONE)).strftime("%Y年%m月%d日 %H:%M (%Z)")
+        report_body = (
+            daily_report.strip()
+            if daily_report
+            else f"レポートを掲載できませんでした。\n\n理由: {report_status}"
+        )
         report_section = (
             f"{REPORT_START_MARKER}\n## AIマーケット日次レポート\n\n"
-            f"生成日時: {generated_at}\n\n{daily_report.strip()}\n\n"
+            f"生成日時: {generated_at}\n\n{report_body}\n\n"
             "※公開情報をもとにした一般的な解説です。特定の個人への投資助言ではありません。\n"
             f"{REPORT_END_MARKER}"
         )
@@ -138,14 +148,18 @@ def main() -> None:
     build_workbook(data, chart_paths, WORKBOOK_PATH)
     from .report_generator import generate_daily_report
 
+    report_status = None
     try:
         daily_report = generate_daily_report(data)
     except RuntimeError as exc:
         print(f"AI日次レポートの生成に失敗したためスキップします: {exc}")
         daily_report = None
+        report_status = str(exc)
     if daily_report is None:
         print("GEMINI_API_KEYが未設定、モデル未対応、またはAPI利用制限により、AI日次レポートはスキップします。")
-    update_readme_dashboard(data, chart_paths, daily_report)
+        if report_status is None:
+            report_status = "GEMINI_API_KEY未設定、モデル未対応、またはAPI利用制限"
+    update_readme_dashboard(data, chart_paths, daily_report, report_status)
     print(f"README、{WORKBOOK_PATH.relative_to(README_PATH.parent)}、グラフを更新しました。")
 
 

@@ -168,6 +168,28 @@ class ReadmeTests(unittest.TestCase):
         self.assertNotIn("old report", content)
         self.assertIn("README本文を保持", content)
 
+    def test_report_failure_replaces_stale_report_with_reason(self):
+        observations = pd.DataFrame(
+            [
+                {"Date": date(2026, 10, 27), "Indicator": "日経平均株価", "Symbol": "^N225", "Value": 60000.0, "PriceType": "Price", "Note": "初回取得"},
+            ]
+        )
+        with TemporaryDirectory() as directory:
+            readme_path = Path(directory) / "README.md"
+            readme_path.write_text(
+                f"# test\n{REPORT_START_MARKER}\n古いプレースホルダー\n{REPORT_END_MARKER}\n",
+                encoding="utf-8",
+            )
+            with patch("src.main.README_PATH", readme_path):
+                update_readme_dashboard(
+                    observations, [], report_status="市場数値の検証に失敗: 37.14"
+                )
+            content = readme_path.read_text(encoding="utf-8")
+
+        self.assertIn("レポートを掲載できませんでした。", content)
+        self.assertIn("理由: 市場数値の検証に失敗: 37.14", content)
+        self.assertNotIn("古いプレースホルダー", content)
+
 
 class GeminiReportTests(unittest.TestCase):
     def test_context_labels_units_stale_yields_and_currency_returns(self):
