@@ -170,10 +170,13 @@ def generate_daily_report(
     last_error: Exception | None = None
     for model_name in dict.fromkeys(preferred_models):
         url = GEMINI_API_URL.format(model=quote(model_name, safe=""))
+        generation_config = {"temperature": 0.3, "maxOutputTokens": 8192}
+        if model_name.startswith("gemini-2.5"):
+            generation_config["thinkingConfig"] = {"thinkingBudget": 1024}
         payload = {
             "contents": [{"role": "user", "parts": [{"text": _build_prompt(_build_market_context(data))}]}],
             "tools": [{"google_search": {}}],
-            "generationConfig": {"temperature": 0.3, "maxOutputTokens": 2400},
+            "generationConfig": generation_config,
         }
         request = Request(
             url,

@@ -164,6 +164,10 @@ class GeminiReportTests(unittest.TestCase):
         self.assertIn('"difference": 0.5', prompt)
         self.assertIn('"percent": 0.317', prompt)
         self.assertEqual(payload["tools"], [{"google_search": {}}])
+        self.assertEqual(payload["generationConfig"]["maxOutputTokens"], 8192)
+        self.assertEqual(
+            payload["generationConfig"]["thinkingConfig"], {"thinkingBudget": 1024}
+        )
         self.assertIn("オルカン", prompt)
         self.assertIn("^TPX", prompt)
         self.assertIn("1306.T", prompt)
