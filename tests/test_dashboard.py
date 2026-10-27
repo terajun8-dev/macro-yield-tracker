@@ -184,8 +184,19 @@ class GeminiReportTests(unittest.TestCase):
     def test_prompt_requires_substantive_sections(self):
         prompt = _build_prompt({"markets": [{"indicator": "日経平均株価", "symbol": "^N225", "recent_observations": [{"date": "2026-10-27", "value": 63000.0}]}]})
         self.assertIn("各見出しの後に", prompt)
-        self.assertIn("2〜4文", prompt)
-        self.assertIn("300文字以上", prompt)
+        self.assertIn("3〜5文", prompt)
+        self.assertIn("700〜1200文字", prompt)
+        self.assertIn("国内外の材料", prompt)
+        self.assertIn("為替", prompt)
+
+    def test_prompt_mentions_optional_related_news(self):
+        prompt = _build_prompt({
+            "markets": [{"indicator": "日経平均株価", "symbol": "^N225", "recent_observations": [{"date": "2026-10-27", "value": 63000.0}]}],
+            "related_news": [{"title": "日銀会合観測", "source": "Reuters"}],
+        })
+        self.assertIn("関連ニュース", prompt)
+        self.assertIn("海外", prompt)
+        self.assertIn("国内", prompt)
 
     def test_http_404_skips_report_generation_instead_of_crashing(self):
         observations = pd.DataFrame(

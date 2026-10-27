@@ -16,6 +16,8 @@ python -m src.main
 
 Google AI Studioで発行したキーを、リポジトリの「Settings」→「Secrets and variables」→「Actions」→「New repository secret」で `GEMINI_API_KEY` として登録してください。キーはソースやREADMEに書かず、GitHub Actionsのシークレットで管理します。キーが未設定の場合も市場データの更新は続行し、AIレポートの生成だけをスキップします。ローカル実行では、環境変数 `GEMINI_API_KEY` を設定してから `python -m src.main` を実行してください。ワークフロー実行1回につきGemini APIを1回呼び出すため、Google AI Studio側の利用枠・料金が適用されます。
 
+関連ニュースを自動で取り込みたい場合は、`NEWS_API_KEY` を同じくGitHub Secretsに追加してください。未設定時でも、RSSのフォールバックで国内・海外の見出しを拾おうと試みます。キーがない場合は、ニュースを使わずに市場データだけで解説します。
+
 <!-- MARKET-DASHBOARD:START -->
 ## 市場ダッシュボード
 
